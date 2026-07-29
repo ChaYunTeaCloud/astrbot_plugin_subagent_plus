@@ -1,6 +1,9 @@
+from astrbot.api.provider import ProviderRequest
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star
 from astrbot.api import logger
+
+from .tools import get_list_subagent_tool
 
 class MyPlugin(Star):
     def __init__(self, context: Context):
@@ -11,3 +14,9 @@ class MyPlugin(Star):
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
+
+    @filter.on_llm_request()
+    async def on_llm_request(self, event: AstrMessageEvent, req: ProviderRequest):
+        logger.debug("on_llm_request")
+        req.func_tool.add_tool(get_list_subagent_tool(event, self.context))
+        return None
