@@ -202,6 +202,7 @@ class MyToolManager:
             # persona = persona_mgr.get_persona(agent_name)
 
             # 调用 SubAgent
+            # 先不实现真正的调用逻辑，先测试获取是否正常，故此处返回都拿到了什么内容
             result = ""
             result += f"Agent {agent_name} 的能力需使用工具:\n"
             for tool in computer_use_tool_set.tools:
@@ -212,28 +213,6 @@ class MyToolManager:
             result += f"Agent {agent_name} 将会拿到的 skill 能力:\n"
             result += f"{await self._get_skills_prompt(agent_name)}\n"
 
-            # 先不实现真正的调用逻辑，先测试获取handoff以及agent是否正常，都拿到了什么内容
-            # result += f"handoff 的内容:\n"
-            # result += f"description: {handoff_tool.description}\n"
-            # result += f"provider_id: {handoff_tool.provider_id}\n"
-            # result += "agent 的内容:\n"
-            # result += f"name: {agent.name}\n"
-            # result += f"instructions: {agent.instructions}\n"
-            # result += f"tools: {agent.tools}\n"
-            # result += f"run_hooks: {agent.run_hooks}\n"
-            # result += f"has_begin_dialogs: {bool(agent.begin_dialogs)}\n"
-            # result += f"other_tools: {other_tools}\n"
-            # result += f"system_tools: {system_tools}\n"
-            # result += f"other_tool_set 的内容:\n"
-            # for tool in other_tool_set.tools:
-            #     result += f"{tool.name}: {tool.description}\n"
-            # result += f"system_tool_set 的内容:\n"
-            # for tool in system_tool_set.tools:
-            #     result += f"{tool.name}: {tool.description}\n"
-            # result += f"通过 iter_builtin_tool_classes 尝试获取所有系统内置工具的内容:\n"
-            # for tool_cls in iter_builtin_tool_classes():
-            #     tool_instance  = tool_mgr.get_builtin_tool(tool_cls)
-            #     result += f"className:{tool_cls.__name__},{tool_instance.name}: {tool_instance.description}\n"
             return result
 
         tool = FunctionTool(
