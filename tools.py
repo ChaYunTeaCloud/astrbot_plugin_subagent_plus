@@ -285,7 +285,7 @@ class MyToolManager:
             logger.debug(f"_get_skills_prompt: Agent {agent_name} 的 skills 白名单为 None")
             # return ""  # None = 不限制，但 SubAgent 默认也不注入，保持原行为
             pass
-        if not allowed_skills:
+        if allowed_skills == []:
             return ""  # [] = 禁用全部
         # 3. 拿 skills 白名单
         logger.debug(f"_get_skills_prompt: Agent {agent_name} 的 skills 白名单为 {allowed_skills}")
