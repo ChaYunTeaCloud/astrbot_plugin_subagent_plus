@@ -296,7 +296,7 @@ class MyToolManager:
         runtime = self._cfg["provider_settings"]["computer_use_runtime"]
         skills = skill_mgr.list_skills(active_only=True, runtime=runtime)
         skills = [s for s in skills if s.name in allowed_skills]
-        logger.debug(f"_get_skills_prompt: 过滤后的 skill 列表为 {skills}")
+        logger.debug(f"_get_skills_prompt: all skills={[s.name for s in skills]}")
         
         if not skills:
             return ""
