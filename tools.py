@@ -283,7 +283,7 @@ class MyToolManager:
         allowed_skills = persona.skills
         if allowed_skills is None:
             logger.debug(f"_get_skills_prompt: Agent {agent_name} 的 skills 白名单为 None")
-            # return ""  # None = 不限制，但 SubAgent 默认也不注入，保持原行为
+            # None = 不限制 → 全部注入，不过滤。注意：AstrBot 的原行为是不注入任何 skill
             pass
         if allowed_skills == []:
             return ""  # [] = 禁用全部
@@ -295,9 +295,10 @@ class MyToolManager:
         skill_mgr = SkillManager()
         runtime = self._cfg["provider_settings"]["computer_use_runtime"]
         skills = skill_mgr.list_skills(active_only=True, runtime=runtime)
-        skills = [s for s in skills if s.name in allowed_skills]
+        if allowed_skills is not None:
+            skills = [s for s in skills if s.name in allowed_skills]  # 白名单过滤；None 时全量放行
         logger.debug(f"_get_skills_prompt: all skills={[s.name for s in skills]}")
-        
+
         if not skills:
             return ""
 
