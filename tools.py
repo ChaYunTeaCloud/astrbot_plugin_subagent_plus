@@ -265,6 +265,7 @@ class MyToolManager:
     async def _get_skills_prompt(self, agent_name: str) -> str:
         """根据 Persona 的 skills 配置获取应注入的 Skill prompt"""
         # 1. 找到此 agent 的 persona_id
+        logger.debug(f"_get_skills_prompt: 找到 Agent {agent_name} 的 persona_id")
         persona_id = None
         for item in self._cfg["subagent_orchestrator"]["agents"]:
             if item.get("name") == agent_name:
@@ -274,24 +275,29 @@ class MyToolManager:
             return ""
 
         # 2. 拿到 persona 数据
+        logger.debug(f"_get_skills_prompt: Agent {agent_name} 的 persona_id 为 {persona_id}")
         persona = await self._context.persona_manager.get_persona(persona_id)
         if not persona:
             return ""
 
-        # 3. 拿 skills 白名单
         allowed_skills = persona.skills
         if allowed_skills is None:
+            logger.debug(f"_get_skills_prompt: Agent {agent_name} 的 skills 白名单为 None")
             # return ""  # None = 不限制，但 SubAgent 默认也不注入，保持原行为
             pass
         if not allowed_skills:
             return ""  # [] = 禁用全部
+        # 3. 拿 skills 白名单
+        logger.debug(f"_get_skills_prompt: Agent {agent_name} 的 skills 白名单为 {allowed_skills}")
 
         # 4. 获取全部可用 skill，按白名单过滤
+        logger.debug(f"_get_skills_prompt: 获取全部可用 skill，按白名单过滤")
         skill_mgr = SkillManager()
         runtime = self._cfg["provider_settings"]["computer_use_runtime"]
         skills = skill_mgr.list_skills(active_only=True, runtime=runtime)
         skills = [s for s in skills if s.name in allowed_skills]
-
+        logger.debug(f"_get_skills_prompt: 过滤后的 skill 列表为 {skills}")
+        
         if not skills:
             return ""
 
