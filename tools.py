@@ -281,7 +281,8 @@ class MyToolManager:
         # 3. 拿 skills 白名单
         allowed_skills = persona.skills
         if allowed_skills is None:
-            return ""  # None = 不限制，但 SubAgent 默认也不注入，保持原行为
+            # return ""  # None = 不限制，但 SubAgent 默认也不注入，保持原行为
+            pass
         if not allowed_skills:
             return ""  # [] = 禁用全部
 
