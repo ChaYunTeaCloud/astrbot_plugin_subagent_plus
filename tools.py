@@ -209,6 +209,8 @@ class MyToolManager:
             result += f"Agent {agent_name} 的 neo Skill 能力所需系统工具:\n"
             for tool in neo_skill_tool_set.tools:
                 result += f"{tool.name}: {tool.description}\n"
+            result += f"Agent {agent_name} 将会拿到的 skill 能力:\n"
+            result += f"{await self._get_skills_prompt(agent_name)}\n"
 
             # 先不实现真正的调用逻辑，先测试获取handoff以及agent是否正常，都拿到了什么内容
             # result += f"handoff 的内容:\n"
