@@ -4,6 +4,6 @@
     "type": "int",
     "hint": "限制 call_subagent 递归调用的最大层数，防止无限嵌套。最小值为 1。",
     "default": 3,
-    "min": 1
+    "slider": { "min": 1, "max": 10, "step": 1 }
   }
 }
