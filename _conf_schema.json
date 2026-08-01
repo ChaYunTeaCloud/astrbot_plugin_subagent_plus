@@ -1,0 +1,9 @@
+{
+  "max_call_subagent_depth": {
+    "description": "SubAgent 最大嵌套调用深度",
+    "type": "int",
+    "hint": "限制 call_subagent 递归调用的最大层数，防止无限嵌套。最小值为 1。",
+    "default": 3,
+    "min": 1
+  }
+}

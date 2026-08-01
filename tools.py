@@ -5,13 +5,8 @@ from astrbot.api.event import AstrMessageEvent
 from astrbot.core.skills.skill_manager import SkillManager, build_skills_prompt
 
 class MyToolManager:
+
     def __init__(self, context: Context):
-        self._tool_set = ToolSet()
-        """用于缓存所有自定义工具"""
-        self._context = context
-        """上下文实例"""
-        self._cfg = context.get_config()
-        """配置实例"""
         self._BUILTIN_TOOL_GROUPS = {
             # ═══════════════════════════════════════════════════════════════
             # 说明：
@@ -132,6 +127,15 @@ class MyToolManager:
             ],
         }
         """系统内置工具集"""
+        
+        self._tool_set = ToolSet()
+        """用于缓存所有自定义工具"""
+        self._context = context
+        """上下文实例"""
+        self._cfg = context.get_config()
+        """配置实例"""
+        self._max_call_subagent_depth = self._cfg.get("max_call_subagent_depth", 0)
+        """最大递归调用深度"""
 
     def get_list_subagent_tool(self) -> FunctionTool:
         """获取 list_subagent 工具"""
@@ -168,14 +172,28 @@ class MyToolManager:
         return tool
 
     def get_call_subagent_tool(self) -> FunctionTool:
-        """获取 call_subagent 工具"""
-        tool = self._tool_set.get_tool("call_subagent")
-        if tool:
-            return tool
-        
+        """
+        获取 call_subagent 工具
+        注: `self._tool_set` 缓存只适合存固定实例,如果要实现控制嵌套深度则不能使用 self._tool_set 缓存单一实例
+            因此此方法内部使用闭包绑定方式实现——每次注入给下层 SubAgent 的工具都是"深度+1"的新实例
+        """
+        return self._make_call_subagent_tool()
+
+
+    def _make_call_subagent_tool(self,depth: int = 0) -> FunctionTool:
+        """
+        根据 call_subagent 工具创建递归调用(嵌套调用 SubAgent)的 call_subagent 工具
+        参数:
+            depth: 递归调用深度，默认值为 0
+        """
+
         async def _handler(event: AstrMessageEvent, agent_name: str) -> str:
             """调用指定 SubAgent"""
-            logger.debug(f"call_subagent: 委派给 Agent {agent_name}")
+            logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}")
+
+            if depth >= self._max_call_subagent_depth:
+                logger.debug(f"call_subagent: 已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。")
+                return f"已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。"
 
             # 获取指定 SubAgent 的 handoff 工具和 Agent 实例
             handoff_tool = next(
@@ -197,10 +215,6 @@ class MyToolManager:
             # 获取 neo Skill 能力所需系统工具集合
             neo_skill_tool_set = self._get_builtin_toolset_by_group_key("neo_skill")
 
-            # # 获取人格设定管理器
-            # persona_mgr = self._context.persona_manager
-            # persona = persona_mgr.get_persona(agent_name)
-
             # 调用 SubAgent
             # 先不实现真正的调用逻辑，先测试获取是否正常，故此处返回都拿到了什么内容
             result = ""
@@ -215,7 +229,7 @@ class MyToolManager:
 
             return result
 
-        tool = FunctionTool(
+        return FunctionTool(
             name="call_subagent",
             description="调用指定 SubAgent",
             parameters={
@@ -230,11 +244,10 @@ class MyToolManager:
             },
             handler=_handler,
         )
-        self._tool_set.add_tool(tool)
-        return tool
+
 
     def _get_computer_use_toolset(self) -> ToolSet:
-        """根据当前配置获取Agent能力需使用工具的集合"""
+        """根据当前配置文件中的 [使用电脑能力] 配置获取Agent需要使用的系统内置工具的集合。"""
         runtime = self._cfg["provider_settings"]["computer_use_runtime"]
         booter  = self._cfg["provider_settings"]["sandbox"]["booter"]
 
@@ -262,6 +275,7 @@ class MyToolManager:
         names = self._BUILTIN_TOOL_GROUPS[key]
         return self._get_builtin_toolset_by_names(names)
 
+
     async def _get_skills_prompt(self, agent_name: str) -> str:
         """根据 Persona 的 skills 配置获取应注入的 Skill prompt"""
         # 1. 找到此 agent 的 persona_id
@@ -287,14 +301,13 @@ class MyToolManager:
             pass
         if allowed_skills == []:
             return ""  # [] = 禁用全部
-        # 3. 拿 skills 白名单
-        logger.debug(f"_get_skills_prompt: Agent {agent_name} 的 skills 白名单为 {allowed_skills}")
 
-        # 4. 获取全部可用 skill，按白名单过滤
-        logger.debug(f"_get_skills_prompt: 获取全部可用 skill，按白名单过滤")
-        skill_mgr = SkillManager()
-        runtime = self._cfg["provider_settings"]["computer_use_runtime"]
-        skills = skill_mgr.list_skills(active_only=True, runtime=runtime)
+        # 3. 获取全部可用 skill
+        skill_mgr = SkillManager()  # Skill 管理器
+        runtime = self._cfg["provider_settings"]["computer_use_runtime"]    # 获取当前配置文件中的 [使用电脑能力] 配置(local/sandbox)
+        skills = skill_mgr.list_skills(active_only=True, runtime=runtime)   # 根据 runtime 获取所有可用 skill
+
+        # 4. 根据 persona 的 skills 配置按白名单过滤 skill
         if allowed_skills is not None:
             skills = [s for s in skills if s.name in allowed_skills]  # 白名单过滤；None 时全量放行
         logger.debug(f"_get_skills_prompt: all skills={[s.name for s in skills]}")
