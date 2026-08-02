@@ -4,7 +4,7 @@ from astrbot.api.event import AstrMessageEvent
 
 from astrbot.core.skills.skill_manager import SkillManager, build_skills_prompt
 
-class MyToolManager:
+class PluginToolManager:
 
     def __init__(self, context: Context):
         self._BUILTIN_TOOL_GROUPS = {
