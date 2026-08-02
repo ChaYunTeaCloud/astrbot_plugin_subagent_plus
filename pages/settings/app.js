@@ -25,11 +25,6 @@ function renderLevels() {
     <div class="card">
       <h3>SubAgent 配置</h3>
       <div class="field">
-        <label for="f-max-depth">最大嵌套调用深度</label>
-        <input id="f-max-depth" type="number" min="1" value="3" />
-        <p class="hint">SubAgent 嵌套调用的最大层数，为 0 时不限制深度，不可为负数。</p>
-      </div>
-      <div class="field">
         <label for="f-router-name">路由 SubAgent 名称</label>
         <input id="f-router-name" type="text" value="router" />
         <p class="hint">用于路由 SubAgent 的名称，默认值为 router。</p>
