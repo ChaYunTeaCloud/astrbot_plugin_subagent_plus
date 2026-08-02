@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SubAgent Plus插件 · 配置中心</title>
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <h2>SubAgent Plus插件 · 配置中心</h2>
+    <span class="badge loading" id="status">加载中...</span>
+    <button class="btn" id="btn-save">保存配置项</button>
+  </div>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-t="basic">基础</button>
+    <button class="tab" data-t="levels">SubAgent配置</button>
+  </div>
+  <div id="body" class="body"></div>
+</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
