@@ -203,21 +203,23 @@ class PluginToolManager:
             if self._max_call_subagent_depth != 0 and depth > self._max_call_subagent_depth:
                 return f"已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。"
 
-            # 获取指定 SubAgent 的 handoffTool、Agent 实例以及对应的 persona_id
+            # 从配置中查找 persona_id
+            agent_cfg = next(
+                (item for item in self._cfg["subagent_orchestrator"]["agents"] if item.get("name") == agent_name),
+                None
+            )
+            if not agent_cfg or not agent_cfg.get("persona_id"):
+                return f"Agent {agent_name} 不存在或未配置人格设定"
+            persona_id: str = agent_cfg["persona_id"]
+
+            # 从 handoffs 中查找 Agent 实例
             handoff_tool = next(
                 (h for h in self._context.subagent_orchestrator.handoffs if h.agent.name == agent_name),
                 None
             )
             if not handoff_tool:
                 return f"Agent {agent_name} 不存在"
-            agent = handoff_tool.agent  # Agent 实例
-            persona_id: str = None
-            for item in self._cfg["subagent_orchestrator"]["agents"]:
-                if item.get("name") == agent_name:
-                    persona_id = item.get("persona_id")
-                    break
-            if not agent or not persona_id:
-                return f"Agent {agent_name} 不存在或未配置人格设定"
+            agent = handoff_tool.agent
 
             tools : list[FunctionTool] = [] # 存储所有工具
             skill_prompt = ""   # skill 能力提示词
