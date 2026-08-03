@@ -23,16 +23,16 @@ class PluginConfigManager:
 
     _instance = None     # 单例实例
 
-    def __new__(cls):
+    def __new__(cls, plugin_name: str = None):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self) -> None:
+    def __init__(self, plugin_name: str = None) -> None:
         if hasattr(self, "_initialized"):
             return
         self._initialized = True
-        self._plugin_data_dir = StarTools.get_data_dir()    # StarTools.get_data_dir() 在目录不存在时会创建目录，无需手动验证
+        self._plugin_data_dir = StarTools.get_data_dir(plugin_name)    # StarTools.get_data_dir() 在目录不存在时会创建目录，无需手动验证
         """插件专属空间目录"""
         self._config_path = self._plugin_data_dir / CONFIG_FILENAME
         """配置文件路径"""

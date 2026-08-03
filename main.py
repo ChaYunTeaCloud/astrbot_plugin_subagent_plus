@@ -4,12 +4,14 @@ from astrbot.api.star import Context, Star
 from astrbot.api import logger
 
 
-from .tools import PluginToolManager
+from .tools import PluginToolManager, PluginConfigManager
 
 class MyPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
 
+        logger.debug(f"PluginConfigManager 初始化，插件名: {self.name}")
+        self._my_config_mgr = PluginConfigManager(self.name)
         self._my_tool_mgr = PluginToolManager(context)
 
     async def initialize(self):
