@@ -138,8 +138,6 @@ class PluginToolManager:
         """AstrBot 配置实例"""
         self._pcfg = PluginConfigManager()
         """插件配置管理器实例"""
-        self._max_call_subagent_depth: int = self._pcfg.get("max_call_subagent_depth")
-        """最大递归调用深度"""
 
     def get_list_subagent_tool(self) -> FunctionTool:
         """获取 list_subagent 工具"""
@@ -159,8 +157,8 @@ class PluginToolManager:
                     "agent_name": agent.name,         # Agent 名称
                     # "instructions": agent.instructions,  # 系统提示词(人格设定)
                     "tool_description": h.description,  # 工具描述
-                    "tools": agent.tools,             # 可用工具列表
-                    "has_begin_dialogs": bool(agent.begin_dialogs),  # 是否有预设对话
+                    # "tools": agent.tools,             # 可用工具列表
+                    # "has_begin_dialogs": bool(agent.begin_dialogs),  # 是否有预设对话
                     # "provider_id": h.provider_id,    # 专用 Provider ID
                 })
             # yield event.plain_result(f"已注册的 SubAgent: {result}")
@@ -199,9 +197,10 @@ class PluginToolManager:
 
         async def _handler(event: AstrMessageEvent, agent_name: str) -> str:
             """调用指定 SubAgent"""
-            logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}，最大深度{self._max_call_subagent_depth}")
-            if self._max_call_subagent_depth != 0 and depth > self._max_call_subagent_depth:
-                return f"已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。"
+            max_depth: int = self._pcfg.get("max_call_subagent_depth")  # 最大递归调用深度
+            logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}，最大深度{max_depth}")
+            if max_depth != 0 and depth > max_depth:
+                return f"已达到最大嵌套深度{max_depth}，无法继续委派。"
 
             # 从配置中查找 persona_id
             agent_cfg = next(
@@ -271,17 +270,18 @@ class PluginToolManager:
     async def _build_subagent_tools(self, persona_id: str) -> list[FunctionTool]:
         """根据 persona_id 构建 SubAgent 工具集合"""
         tools : list[FunctionTool] = []
+
+        tools.extend((await self._get_plugin_toolset(persona_id)).tools)
+
         tools.extend(self._get_computer_use_toolset().tools)
-        # 获取 neo Skill 能力所需系统工具集合
+
         tools.extend(self._get_builtin_toolset_by_group_key("neo_skill").tools)
-        # 获取插件工具（Persona 的 tools 元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)）
-        tools.extend(await self._get_plugin_toolset(persona_id).tools)
+
         return tools
 
     async def _build_subagent_skill_prompt(self, persona_id: str) -> str:
         """根据 persona_id 构建 SubAgent skill 能力提示词"""
         return await self._get_skills_prompt(persona_id)
-
 
     def _get_computer_use_toolset(self) -> ToolSet:
         """根据当前配置文件中的 [使用电脑能力] 配置获取Agent需要使用的系统内置工具的集合。"""
