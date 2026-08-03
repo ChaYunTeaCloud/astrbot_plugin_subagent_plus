@@ -238,19 +238,18 @@ class PluginToolManager:
             # 调用 SubAgent
             # 先不实现真正的调用逻辑，先测试获取是否正常，故此处返回都拿到了什么内容
             result = ""
-            result += f"Agent {agent_name} 的能力需使用工具:\n"
-            for tool in computer_use_tool_set.tools:
-                result += f"{tool.name}: {tool.description}\n"
-            result += f"Agent {agent_name} 的 neo Skill 能力所需系统工具:\n"
-            for tool in neo_skill_tool_set.tools:
-                result += f"{tool.name}: {tool.description}\n"
+            # result += f"Agent {agent_name} 的能力需使用工具:\n"
+            # for tool in computer_use_tool_set.tools:
+            #     result += f"{tool.name}: {tool.description}\n"
+            # result += f"Agent {agent_name} 的 neo Skill 能力所需系统工具:\n"
+            # for tool in neo_skill_tool_set.tools:
+            #     result += f"{tool.name}: {tool.description}\n"
             result += f"Agent {agent_name} 的插件工具:\n"
             for tool in plugin_tool_set.tools:
                 result += f"{tool.name}: {tool.description}\n"
-            result += f"Agent {agent_name} 的所有工具:\n"
-            for tool in tools:
-                result += f"{tool.name}: {tool.description}\n"
-            
+            # result += f"Agent {agent_name} 的所有工具:\n"
+            # for tool in tools:
+            #     result += f"{tool.name}: {tool.description}\n"
             result += f"Agent {agent_name} 将会拿到的 skill 能力:\n"
             result += f"{await self._get_skills_prompt(agent_name)}\n"
 
