@@ -305,9 +305,12 @@ class PluginToolManager:
 
     def _get_plugin_toolset(self, agent_tools: list[str | FunctionTool] | None = None) -> ToolSet:
         """根据 Agent 的 tools 配置获取插件工具集合。
+        注：
+        - handoff 工具由 AstrBot 手动注入给 MainAgent,不属于插件工具集合。
+          源码指引: astrbot\core\astr_main_agent.py#L639
 
         agent.tools 语义:
-        - None   → 使用全部可用插件工具（排除 handoff 工具防嵌套）
+        - None   → 使用全部可用插件工具(AstrBot 官方行为)
         - []     → 禁用全部
         - [str]  → 白名单，元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)
         """
@@ -315,25 +318,19 @@ class PluginToolManager:
         plugin_tool_set = ToolSet()
 
         if agent_tools is None:
-            handoff_names = {
-                tool.name
-                for tool in tool_mgr.func_list
-                if isinstance(tool, HandoffTool)
-            }
+            # None = 使用全部可用插件工具
             for tool in tool_mgr.get_full_tool_set():
-                if tool.name in handoff_names:
-                    continue  # 排除 handoff 工具，防止无限嵌套
                 if tool.active:
                     plugin_tool_set.add_tool(tool)
             return plugin_tool_set
 
         for t in agent_tools:
             if isinstance(t, str):
-                ft = tool_mgr.get_func(t)  # 从配置注册的工具中获取 FunctionTool 实例
+                ft = tool_mgr.get_func(t)
                 if ft is not None:
                     plugin_tool_set.add_tool(ft)
             else:
-                plugin_tool_set.add_tool(t)  # 已经是 FunctionTool 实例
+                plugin_tool_set.add_tool(t)
 
         return plugin_tool_set
 
