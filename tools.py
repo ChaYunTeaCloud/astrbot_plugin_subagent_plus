@@ -228,16 +228,11 @@ class PluginToolManager:
                 # 获取 skill 能力提示词
                 skill_prompt = await self._get_skills_prompt(persona_id)
                 # 获取Agent能力需使用系统内置工具的集合
-                tools.extend(self._get_computer_use_toolset().tools)
-                # 获取 neo Skill 能力所需系统工具集合
-                tools.extend(self._get_builtin_toolset_by_group_key("neo_skill").tools)
-                # 获取插件工具（Persona 的 tools 元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)）
-                tools.extend(await self._get_plugin_toolset(persona_id).tools)
 
             # 注入 call_subagent_tool 给下层 SubAgent
             next_depth = depth + 1
             tools.append(self._make_call_subagent_tool(next_depth))
-
+            
             # 调用 SubAgent
             # 先不实现真正的调用逻辑，先测试获取是否正常，故此处返回都拿到了什么内容
             result = ""
@@ -264,7 +259,25 @@ class PluginToolManager:
             },
             handler=_handler,
         )
+    
+    def _build_subagent_request(self, persona_id: str) -> dict:
+        """根据 persona_id 构建 SubAgent 请求信息"""
+        return {
+            "persona_id": persona_id,
+            "skill_prompt": "",
+            "tools": [],
+        }
 
+
+    async def _build_subagent_tools(self, persona_id: str) -> list[FunctionTool]:
+        """根据 persona_id 构建 SubAgent 工具集合"""
+        tools : list[FunctionTool] = []
+        tools.extend(self._get_computer_use_toolset().tools)
+        # 获取 neo Skill 能力所需系统工具集合
+        tools.extend(self._get_builtin_toolset_by_group_key("neo_skill").tools)
+        # 获取插件工具（Persona 的 tools 元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)）
+        tools.extend(await self._get_plugin_toolset(persona_id).tools)
+        return tools
 
     def _get_computer_use_toolset(self) -> ToolSet:
         """根据当前配置文件中的 [使用电脑能力] 配置获取Agent需要使用的系统内置工具的集合。"""
