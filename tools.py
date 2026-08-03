@@ -328,7 +328,7 @@ class PluginToolManager:
             return ToolSet()  # [] = 禁用全部
 
         # 2. 获取全部可用插件工具
-        full_tool_set = await self._context.get_llm_tool_manager().get_full_tool_set()
+        full_tool_set = self._context.get_llm_tool_manager().get_full_tool_set()
 
         # 3. 根据 persona 的 tools 配置按白名单过滤插件工具
         if allowed_tools is None:
