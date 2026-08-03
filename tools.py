@@ -221,19 +221,18 @@ class PluginToolManager:
             if not agent or not persona_id:
                 return f"Agent {agent_name} 不存在或未配置人格设定"
 
-            # 构建 tools
-            tools : list[FunctionTool] = []
+            tools : list[FunctionTool] = [] # 存储所有工具
+            skill_prompt = ""   # skill 能力提示词
 
-            # 获取Agent能力需使用系统内置工具的集合
-            computer_use_tool_set = self._get_computer_use_toolset()
-            tools.extend(computer_use_tool_set.tools)
-            # 获取 neo Skill 能力所需系统工具集合
-            neo_skill_tool_set = self._get_builtin_toolset_by_group_key("neo_skill")
-            tools.extend(neo_skill_tool_set.tools)
-            # 获取插件工具（Persona 的 tools 元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)）
-            plugin_tool_set = await self._get_plugin_toolset(persona_id)
-            tools.extend(plugin_tool_set.tools)
-
+            if persona_id != "default": # 非 default 人格才允许注入skill 能力和工具
+                # 获取 skill 能力提示词
+                skill_prompt = await self._get_skills_prompt(persona_id)
+                # 获取Agent能力需使用系统内置工具的集合
+                tools.extend(self._get_computer_use_toolset().tools)
+                # 获取 neo Skill 能力所需系统工具集合
+                tools.extend(self._get_builtin_toolset_by_group_key("neo_skill").tools)
+                # 获取插件工具（Persona 的 tools 元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)）
+                tools.extend(await self._get_plugin_toolset(persona_id).tools)
 
             # 注入 call_subagent_tool 给下层 SubAgent
             next_depth = depth + 1
@@ -242,17 +241,11 @@ class PluginToolManager:
             # 调用 SubAgent
             # 先不实现真正的调用逻辑，先测试获取是否正常，故此处返回都拿到了什么内容
             result = ""
-            # result += f"Agent {agent_name} 的能力需使用工具:\n"
-            # for tool in computer_use_tool_set.tools:
-            #     result += f"{tool.name}: {tool.description}\n"
-            # result += f"Agent {agent_name} 的 neo Skill 能力所需系统工具:\n"
-            # for tool in neo_skill_tool_set.tools:
-            #     result += f"{tool.name}: {tool.description}\n"
-            result += f"Agent {agent_name} 将会拿到的插件工具:\n"
-            for tool in plugin_tool_set.tools:
+            result = f"Agent {agent_name} 将会拿到的工具:\n"
+            for tool in tools:
                 result += f"{tool.name}: {tool.description}\n"
-            result += f"Agent {agent_name} 将会拿到的 skill 能力:\n"
-            result += f"{await self._get_skills_prompt(persona_id)}\n"
+            result = f"Agent {agent_name} 将会拿到的 skill 能力:\n"
+            result += f"{skill_prompt}\n"
 
             return result
 
