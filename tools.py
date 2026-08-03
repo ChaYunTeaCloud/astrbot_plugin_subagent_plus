@@ -4,6 +4,8 @@ from astrbot.api.event import AstrMessageEvent
 
 from astrbot.core.skills.skill_manager import SkillManager, build_skills_prompt
 
+from .config_manager import PluginConfigManager
+
 class PluginToolManager:
 
     def __init__(self, context: Context):
@@ -133,8 +135,10 @@ class PluginToolManager:
         self._context = context
         """上下文实例"""
         self._cfg = context.get_config()
-        """配置实例"""
-        self._max_call_subagent_depth = self._cfg.get("max_call_subagent_depth", 0)
+        """AstrBot 配置实例"""
+        self._pcfg = PluginConfigManager()
+        """插件配置管理器实例"""
+        self._max_call_subagent_depth: int = self._pcfg.get("max_call_subagent_depth")
         """最大递归调用深度"""
 
     def get_list_subagent_tool(self) -> FunctionTool:
@@ -180,18 +184,18 @@ class PluginToolManager:
         return self._make_call_subagent_tool()
 
 
-    def _make_call_subagent_tool(self,depth: int = 0) -> FunctionTool:
+    def _make_call_subagent_tool(self, depth: int = 3) -> FunctionTool:
         """
         根据 call_subagent 工具创建递归调用(嵌套调用 SubAgent)的 call_subagent 工具
         参数:
-            depth: 递归调用深度，默认值为 0
+            depth: 递归调用深度，默认值为 3。为 0 时表示无限嵌套。
         """
 
         async def _handler(event: AstrMessageEvent, agent_name: str) -> str:
             """调用指定 SubAgent"""
             logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}")
 
-            if depth >= self._max_call_subagent_depth:
+            if self._max_call_subagent_depth != 0 and depth >= self._max_call_subagent_depth:
                 logger.debug(f"call_subagent: 已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。")
                 return f"已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。"
 
@@ -215,6 +219,24 @@ class PluginToolManager:
             # 获取 neo Skill 能力所需系统工具集合
             neo_skill_tool_set = self._get_builtin_toolset_by_group_key("neo_skill")
 
+            # 获取插件工具（agent.tools 元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)）
+            tool_mgr = self._context.get_llm_tool_manager()
+            plugin_tool_set = ToolSet()
+            for t in (agent.tools or []):
+                if isinstance(t, str):
+                    ft = tool_mgr.get_func(t)   # 从配置注册的工具中获取 FunctionTool 实例
+                    if ft is not None:
+                        plugin_tool_set.add_tool(ft)
+                else:
+                    plugin_tool_set.add_tool(t)  # 已经是 FunctionTool 实例
+
+            # 合并所有工具
+            tools = computer_use_tool_set.tools + neo_skill_tool_set.tools + plugin_tool_set.tools
+
+            # 注入 call_subagent_tool 给下层 SubAgent
+            next_depth = depth + 1
+            tools.append(self._make_call_subagent_tool(next_depth))
+
             # 调用 SubAgent
             # 先不实现真正的调用逻辑，先测试获取是否正常，故此处返回都拿到了什么内容
             result = ""
@@ -224,6 +246,13 @@ class PluginToolManager:
             result += f"Agent {agent_name} 的 neo Skill 能力所需系统工具:\n"
             for tool in neo_skill_tool_set.tools:
                 result += f"{tool.name}: {tool.description}\n"
+            result += f"Agent {agent_name} 的插件工具:\n"
+            for tool in plugin_tool_set.tools:
+                result += f"{tool.name}: {tool.description}\n"
+            result += f"Agent {agent_name} 的所有工具:\n"
+            for tool in tools:
+                result += f"{tool.name}: {tool.description}\n"
+            
             result += f"Agent {agent_name} 将会拿到的 skill 能力:\n"
             result += f"{await self._get_skills_prompt(agent_name)}\n"
 

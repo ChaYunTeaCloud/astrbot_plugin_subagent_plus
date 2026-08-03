@@ -55,9 +55,9 @@ class PluginConfigManager:
         获取配置项。
         Args:
             key (str): 配置项键。
-            default (Any, optional): 默认值。 Defaults to None.
         Returns:
             Any: 配置项值。
+            default (Any, optional): 默认值。 Defaults to None.
         """
         return self._config.get(key, default)
     

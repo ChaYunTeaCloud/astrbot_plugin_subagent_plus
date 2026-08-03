@@ -3,14 +3,9 @@ from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star
 from astrbot.api import logger
 
-
-from .tools import PluginToolManager
-
 class MyPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
-
-        self._my_tool_mgr = PluginToolManager(context)
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
