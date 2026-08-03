@@ -201,7 +201,7 @@ class PluginToolManager:
             """调用指定 SubAgent"""
             logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}")
             logger.debug(f"call_subagent: depth={depth}, max={self._max_call_subagent_depth}")
-            if self._max_call_subagent_depth != 0 and depth >= self._max_call_subagent_depth:
+            if self._max_call_subagent_depth != 0 and depth > self._max_call_subagent_depth:
                 logger.debug(f"call_subagent: 已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。")
                 return f"已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。"
 
@@ -210,13 +210,15 @@ class PluginToolManager:
                 (h for h in self._context.subagent_orchestrator.handoffs if h.agent.name == agent_name),
                 None
             )
+            if not handoff_tool:
+                return f"Agent {agent_name} 不存在"
             agent = handoff_tool.agent  # Agent 实例
             persona_id: str = None
             for item in self._cfg["subagent_orchestrator"]["agents"]:
                 if item.get("name") == agent_name:
                     persona_id = item.get("persona_id")
                     break
-            if not handoff_tool or not agent or not persona_id:
+            if not agent or not persona_id:
                 return f"Agent {agent_name} 不存在或未配置人格设定"
 
             # 构建 tools
@@ -229,7 +231,7 @@ class PluginToolManager:
             neo_skill_tool_set = self._get_builtin_toolset_by_group_key("neo_skill")
             tools.extend(neo_skill_tool_set.tools)
             # 获取插件工具（Persona 的 tools 元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)）
-            plugin_tool_set = self._get_plugin_toolset(persona_id)
+            plugin_tool_set = await self._get_plugin_toolset(persona_id)
             tools.extend(plugin_tool_set.tools)
 
 
@@ -250,7 +252,7 @@ class PluginToolManager:
             for tool in plugin_tool_set.tools:
                 result += f"{tool.name}: {tool.description}\n"
             result += f"Agent {agent_name} 将会拿到的 skill 能力:\n"
-            result += f"{await self._get_skills_prompt(agent_name)}\n"
+            result += f"{await self._get_skills_prompt(persona_id)}\n"
 
             return result
 
