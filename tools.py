@@ -199,10 +199,8 @@ class PluginToolManager:
 
         async def _handler(event: AstrMessageEvent, agent_name: str) -> str:
             """调用指定 SubAgent"""
-            logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}")
-            logger.debug(f"call_subagent: depth={depth}, max={self._max_call_subagent_depth}")
+            logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}，最大深度{self._max_call_subagent_depth}")
             if self._max_call_subagent_depth != 0 and depth > self._max_call_subagent_depth:
-                logger.debug(f"call_subagent: 已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。")
                 return f"已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。"
 
             # 获取指定 SubAgent 的 handoffTool、Agent 实例以及对应的 persona_id
