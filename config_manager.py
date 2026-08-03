@@ -1,9 +1,3 @@
-# config_manager.py
-"""
-配置管理器 —— 自行管理配置文件，绕过框架配置逻辑。
-
-配置文件保存在 data/plugin_data/{插件名}/config.json。即上上级目录下的 plugin_data 目录下的插件专属空间。
-"""
 import json
 from typing import Any, Dict
 
@@ -32,46 +26,42 @@ class PluginConfigManager:
         if hasattr(self, "_initialized"):
             return
         self._initialized = True
-        self._plugin_data_dir = StarTools.get_data_dir(plugin_name)    # StarTools.get_data_dir() 在目录不存在时会创建目录，无需手动验证
-        """插件专属空间目录"""
+        self._plugin_data_dir = StarTools.get_data_dir(plugin_name)
         self._config_path = self._plugin_data_dir / CONFIG_FILENAME
-        """配置文件路径"""
-        self._config: Dict[str, Any] = self._load()   
-        """配置字典"""
-    
+        self._config: Dict[str, Any] = self._load()
+
+    # ═══════════ 对外：整份读写 ═══════════
+    @property
+    def config(self) -> Dict[str, Any]:
+        """获取完整配置字典。"""
+        return self._config
+
+    def set_config(self, config: Dict[str, Any]) -> bool:
+        """用完整配置字典整体更新并保存。"""
+        self._config.update(config)
+        return self._save()
+
+    # ═══════════ 对外：单项读写 ═══════════
+    def get(self, key: str, default: Any = None) -> Any:
+        """获取配置项。"""
+        return self._config.get(key, default)
+
+    def set(self, key: str, value: Any = None) -> bool:
+        """设置配置项并保存。"""
+        self._config[key] = value
+        return self._save()
+
+    # ═══════════ 内部：文件 IO ═══════════
     def _load(self) -> Dict[str, Any]:
         """读取配置文件；不存在或损坏则用默认配置。"""
         if self._config_path.exists():
             try:
                 with open(self._config_path, "r", encoding="utf-8") as f:
                     loaded = json.load(f)
-                return {**DEFAULT_CONFIG, **loaded}  # 缺项补默认
+                return {**DEFAULT_CONFIG, **loaded}
             except Exception as e:
                 logger.error(f"加载配置失败: {e}，使用默认配置。")
         return dict(DEFAULT_CONFIG)
-
-    def get(self, key: str, default: Any = None) -> Any:
-        """
-        获取配置项。
-        Args:
-            key (str): 配置项键。
-        Returns:
-            Any: 配置项值。
-            default (Any, optional): 默认值。 Defaults to None.
-        """
-        return self._config.get(key, default)
-    
-    def set(self, key: str, value: Any = None) -> bool:
-        """
-        设置配置项并保存。
-        Args:
-            key (str): 配置项键。
-            value (Any): 配置项值。
-        Returns:
-            bool: 是否成功更新。
-        """
-        self._config[key] = value
-        return self._save()
 
     def _save(self) -> bool:
         """保存配置到文件。"""

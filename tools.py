@@ -134,9 +134,9 @@ class PluginToolManager:
         """用于缓存所有自定义工具"""
         self._context = context
         """上下文实例"""
-        self._cfg = context.get_config()
+        self._cfg_mgr = context.get_config()
         """AstrBot 配置实例"""
-        self._pcfg = PluginConfigManager()
+        self._pcfg_mgr = PluginConfigManager()
         """插件配置管理器实例"""
 
     def get_list_subagent_tool(self) -> FunctionTool:
@@ -197,14 +197,14 @@ class PluginToolManager:
 
         async def _handler(event: AstrMessageEvent, agent_name: str) -> str:
             """调用指定 SubAgent"""
-            max_depth: int = self._pcfg.get("max_call_subagent_depth")  # 最大递归调用深度
+            max_depth: int = self._pcfg_mgr.get("max_call_subagent_depth")  # 最大递归调用深度
             logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}，最大深度{max_depth}")
             if max_depth != 0 and depth > max_depth:
                 return f"已达到最大嵌套深度{max_depth}，无法继续委派。"
 
             # 从配置中查找 persona_id
             agent_cfg = next(
-                (item for item in self._cfg["subagent_orchestrator"]["agents"] if item.get("name") == agent_name),
+                (item for item in self._cfg_mgr["subagent_orchestrator"]["agents"] if item.get("name") == agent_name),
                 None
             )
             if not agent_cfg or not agent_cfg.get("persona_id"):
@@ -285,8 +285,8 @@ class PluginToolManager:
 
     def _get_computer_use_toolset(self) -> ToolSet:
         """根据当前配置文件中的 [使用电脑能力] 配置获取Agent需要使用的系统内置工具的集合。"""
-        runtime = self._cfg["provider_settings"]["computer_use_runtime"]
-        booter  = self._cfg["provider_settings"]["sandbox"]["booter"]
+        runtime = self._cfg_mgr["provider_settings"]["computer_use_runtime"]
+        booter  = self._cfg_mgr["provider_settings"]["sandbox"]["booter"]
 
         names = list(self._BUILTIN_TOOL_GROUPS["runtime_common"])
 
@@ -359,7 +359,7 @@ class PluginToolManager:
             return ""  # [] = 禁用全部
 
         # 2. 获取全部可用 skill
-        runtime = self._cfg["provider_settings"]["computer_use_runtime"]    # 获取当前配置文件中的 [使用电脑能力] 配置(local/sandbox)
+        runtime = self._cfg_mgr["provider_settings"]["computer_use_runtime"]    # 获取当前配置文件中的 [使用电脑能力] 配置(local/sandbox)
         skills = SkillManager().list_skills(active_only=True, runtime=runtime)   # 根据 runtime 获取所有可用 skill
 
         # 3. 根据 persona 的 skills 配置按白名单过滤 skill
