@@ -178,23 +178,29 @@ class PluginToolManager:
     def get_call_subagent_tool(self) -> FunctionTool:
         """
         获取 call_subagent 工具
-        注: `self._tool_set` 缓存只适合存固定实例,如果要实现控制嵌套深度则不能使用 self._tool_set 缓存单一实例
-            因此此方法内部使用闭包绑定方式实现——每次注入给下层 SubAgent 的工具都是"深度+1"的新实例
+        注: `self._tool_set` 只缓存根实例,因为后续要实现控制嵌套深度所以不能使用 self._tool_set 缓存单一实例
+            因此 make 方法内部将会使用闭包绑定方式实现——每次注入给下层 SubAgent 的工具都是"深度+1"的新实例
         """
-        return self._make_call_subagent_tool()
+        tool = self._tool_set.get_tool("call_subagent")
+        if tool:
+            return tool
+        tool = self._make_call_subagent_tool(1)
+        self._tool_set.add_tool(tool)
+        return tool
 
 
-    def _make_call_subagent_tool(self, depth: int = 3) -> FunctionTool:
+    def _make_call_subagent_tool(self, depth: int) -> FunctionTool:
         """
         根据 call_subagent 工具创建递归调用(嵌套调用 SubAgent)的 call_subagent 工具
+        每次注入给下层 SubAgent 的工具都是"深度+1"的新实例
         参数:
-            depth: 递归调用深度，默认值为 3。为 0 时表示无限嵌套。
+            depth: 递归调用深度，首次调用时为 1, 后续调用时递增。
         """
 
         async def _handler(event: AstrMessageEvent, agent_name: str) -> str:
             """调用指定 SubAgent"""
             logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}")
-
+            logger.debug(f"call_subagent: depth={depth}, max={self._max_call_subagent_depth}")
             if self._max_call_subagent_depth != 0 and depth >= self._max_call_subagent_depth:
                 logger.debug(f"call_subagent: 已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。")
                 return f"已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。"
@@ -220,15 +226,7 @@ class PluginToolManager:
             neo_skill_tool_set = self._get_builtin_toolset_by_group_key("neo_skill")
 
             # 获取插件工具（agent.tools 元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)）
-            tool_mgr = self._context.get_llm_tool_manager()
-            plugin_tool_set = ToolSet()
-            for t in (agent.tools or []):
-                if isinstance(t, str):
-                    ft = tool_mgr.get_func(t)   # 从配置注册的工具中获取 FunctionTool 实例
-                    if ft is not None:
-                        plugin_tool_set.add_tool(ft)
-                else:
-                    plugin_tool_set.add_tool(t)  # 已经是 FunctionTool 实例
+            plugin_tool_set = self._get_plugin_toolset(agent.tools)
 
             # 合并所有工具
             tools = computer_use_tool_set.tools + neo_skill_tool_set.tools + plugin_tool_set.tools
@@ -304,6 +302,40 @@ class PluginToolManager:
         names = self._BUILTIN_TOOL_GROUPS[key]
         return self._get_builtin_toolset_by_names(names)
 
+
+    def _get_plugin_toolset(self, agent_tools: list[str | FunctionTool] | None = None) -> ToolSet:
+        """根据 Agent 的 tools 配置获取插件工具集合。
+
+        agent.tools 语义:
+        - None   → 使用全部可用插件工具（排除 handoff 工具防嵌套）
+        - []     → 禁用全部
+        - [str]  → 白名单，元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)
+        """
+        tool_mgr = self._context.get_llm_tool_manager()
+        plugin_tool_set = ToolSet()
+
+        if agent_tools is None:
+            handoff_names = {
+                tool.name
+                for tool in tool_mgr.func_list
+                if isinstance(tool, HandoffTool)
+            }
+            for tool in tool_mgr.get_full_tool_set():
+                if tool.name in handoff_names:
+                    continue  # 排除 handoff 工具，防止无限嵌套
+                if tool.active:
+                    plugin_tool_set.add_tool(tool)
+            return plugin_tool_set
+
+        for t in agent_tools:
+            if isinstance(t, str):
+                ft = tool_mgr.get_func(t)  # 从配置注册的工具中获取 FunctionTool 实例
+                if ft is not None:
+                    plugin_tool_set.add_tool(ft)
+            else:
+                plugin_tool_set.add_tool(t)  # 已经是 FunctionTool 实例
+
+        return plugin_tool_set
 
     async def _get_skills_prompt(self, agent_name: str) -> str:
         """根据 Persona 的 skills 配置获取应注入的 Skill prompt"""
