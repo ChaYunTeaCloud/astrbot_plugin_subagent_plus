@@ -226,8 +226,9 @@ class PluginToolManager:
 
             if persona_id != "default": # 非 default 人格才允许注入skill 能力和工具
                 # 获取 skill 能力提示词
-                skill_prompt = await self._get_skills_prompt(persona_id)
-                # 获取Agent能力需使用系统内置工具的集合
+                skill_prompt = await self._build_subagent_skill_prompt(persona_id)
+                # 获取 tools
+                tools = await self._build_subagent_tools(persona_id)
 
             # 注入 call_subagent_tool 给下层 SubAgent
             next_depth = depth + 1
@@ -282,6 +283,7 @@ class PluginToolManager:
     async def _build_subagent_skill_prompt(self, persona_id: str) -> str:
         """根据 persona_id 构建 SubAgent skill 能力提示词"""
         return await self._get_skills_prompt(persona_id)
+
 
     def _get_computer_use_toolset(self) -> ToolSet:
         """根据当前配置文件中的 [使用电脑能力] 配置获取Agent需要使用的系统内置工具的集合。"""
@@ -345,6 +347,7 @@ class PluginToolManager:
             return full_tool_set
 
         return ToolSet(tools=[t for t in full_tool_set.tools if t.name in allowed_tools])
+
 
     async def _get_skills_prompt(self, persona_id: str) -> str:
         """根据 Persona 的 skills 配置获取应注入的 Skill prompt"""
