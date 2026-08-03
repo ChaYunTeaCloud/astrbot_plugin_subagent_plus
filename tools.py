@@ -205,31 +205,33 @@ class PluginToolManager:
                 logger.debug(f"call_subagent: 已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。")
                 return f"已达到最大嵌套深度{self._max_call_subagent_depth}，无法继续委派。"
 
-            # 获取指定 SubAgent 的 handoff 工具和 Agent 实例
+            # 获取指定 SubAgent 的 handoffTool、Agent 实例以及对应的 persona_id
             handoff_tool = next(
                 (h for h in self._context.subagent_orchestrator.handoffs if h.agent.name == agent_name),
                 None
             )
-            if handoff_tool is None:
-                logger.warning(f"call_subagent: Agent {agent_name} 不存在")
-                return f"Agent {agent_name} 不存在"
             agent = handoff_tool.agent  # Agent 实例
-            if agent is None:
-                logger.warning(f"call_subagent: Agent {agent_name} 不存在")
-                return f"Agent {agent_name} 不存在"
-            
+            persona_id: str = None
+            for item in self._cfg["subagent_orchestrator"]["agents"]:
+                if item.get("name") == agent_name:
+                    persona_id = item.get("persona_id")
+                    break
+            if not handoff_tool or not agent or not persona_id:
+                return f"Agent {agent_name} 不存在或未配置人格设定"
+
+            # 构建 tools
+            tools : list[FunctionTool] = []
 
             # 获取Agent能力需使用系统内置工具的集合
             computer_use_tool_set = self._get_computer_use_toolset()
-
+            tools.extend(computer_use_tool_set.tools)
             # 获取 neo Skill 能力所需系统工具集合
             neo_skill_tool_set = self._get_builtin_toolset_by_group_key("neo_skill")
+            tools.extend(neo_skill_tool_set.tools)
+            # 获取插件工具（Persona 的 tools 元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)）
+            plugin_tool_set = self._get_plugin_toolset(persona_id)
+            tools.extend(plugin_tool_set.tools)
 
-            # 获取插件工具（agent.tools 元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)）
-            plugin_tool_set = self._get_plugin_toolset(agent.tools)
-
-            # 合并所有工具
-            tools = computer_use_tool_set.tools + neo_skill_tool_set.tools + plugin_tool_set.tools
 
             # 注入 call_subagent_tool 给下层 SubAgent
             next_depth = depth + 1
@@ -244,12 +246,9 @@ class PluginToolManager:
             # result += f"Agent {agent_name} 的 neo Skill 能力所需系统工具:\n"
             # for tool in neo_skill_tool_set.tools:
             #     result += f"{tool.name}: {tool.description}\n"
-            result += f"Agent {agent_name} 的插件工具:\n"
+            result += f"Agent {agent_name} 将会拿到的插件工具:\n"
             for tool in plugin_tool_set.tools:
                 result += f"{tool.name}: {tool.description}\n"
-            # result += f"Agent {agent_name} 的所有工具:\n"
-            # for tool in tools:
-            #     result += f"{tool.name}: {tool.description}\n"
             result += f"Agent {agent_name} 将会拿到的 skill 能力:\n"
             result += f"{await self._get_skills_prompt(agent_name)}\n"
 
@@ -302,74 +301,58 @@ class PluginToolManager:
         return self._get_builtin_toolset_by_names(names)
 
 
-    def _get_plugin_toolset(self, agent_tools: list[str | FunctionTool] | None = None) -> ToolSet:
-        """根据 Agent 的 tools 配置获取插件工具集合。
+    async def _get_plugin_toolset(self, persona_id: str) -> ToolSet:
+        """根据 Agent 对应的 Persona 的 tools 配置获取插件工具集合。
         注：
         - handoff 工具由 AstrBot 手动注入给 MainAgent,不属于插件工具集合。
           源码指引: astrbot\core\astr_main_agent.py#L639
 
-        agent.tools 语义:
+        Persona 的 tools 语义:
         - None   → 使用全部可用插件工具(AstrBot 官方行为)
         - []     → 禁用全部
         - [str]  → 白名单，元素可能是 str(配置注册) 或 FunctionTool(装饰器注册)
         """
-        tool_mgr = self._context.get_llm_tool_manager()
-        plugin_tool_set = ToolSet()
+        # 从 Persona 实时获取 tools 配置
+        # agent.tools 似乎只是个快照，不是实时的
+        # 因此这里从 persona 实例获取 tools，与下面的获取 skill 方法保持一致
 
-        if agent_tools is None:
-            # None = 使用全部可用插件工具
-            for tool in tool_mgr.get_full_tool_set():
-                if tool.active:
-                    plugin_tool_set.add_tool(tool)
-            return plugin_tool_set
-
-        for t in agent_tools:
-            if isinstance(t, str):
-                ft = tool_mgr.get_func(t)
-                if ft is not None:
-                    plugin_tool_set.add_tool(ft)
-            else:
-                plugin_tool_set.add_tool(t)
-
-        return plugin_tool_set
-
-    async def _get_skills_prompt(self, agent_name: str) -> str:
-        """根据 Persona 的 skills 配置获取应注入的 Skill prompt"""
-        # 1. 找到此 agent 的 persona_id
-        logger.debug(f"_get_skills_prompt: 找到 Agent {agent_name} 的 persona_id")
-        persona_id = None
-        for item in self._cfg["subagent_orchestrator"]["agents"]:
-            if item.get("name") == agent_name:
-                persona_id = item.get("persona_id")
-                break
-        if not persona_id:
-            return ""
-
-        # 2. 拿到 persona 数据
-        logger.debug(f"_get_skills_prompt: Agent {agent_name} 的 persona_id 为 {persona_id}")
+        # 1. 获取 persona 实例以及 tools 配置
         persona = await self._context.persona_manager.get_persona(persona_id)
         if not persona:
-            return ""
+            logger.warning(f"_get_plugin_toolset: Persona {persona_id} 不存在")
+            return ToolSet()
+        allowed_tools = persona.tools
+        if allowed_tools == []:
+            return ToolSet()  # [] = 禁用全部
 
+        # 2. 获取全部可用插件工具
+        full_tool_set = await self._context.get_llm_tool_manager().get_full_tool_set()
+
+        # 3. 根据 persona 的 tools 配置按白名单过滤插件工具
+        if allowed_tools is None:
+            return full_tool_set
+
+        return ToolSet(tools=[t for t in full_tool_set.tools if t.name in allowed_tools])
+
+    async def _get_skills_prompt(self, persona_id: str) -> str:
+        """根据 Persona 的 skills 配置获取应注入的 Skill prompt"""
+        # 1. 获取 persona 实例以及 skills 配置
+        persona = await self._context.persona_manager.get_persona(persona_id)
+        if not persona:
+            logger.warning(f"_get_skills_prompt: Persona {persona_id} 不存在")
+            return f""
         allowed_skills = persona.skills
-        if allowed_skills is None:
-            logger.debug(f"_get_skills_prompt: Agent {agent_name} 的 skills 白名单为 None")
-            # None = 不限制 → 全部注入，不过滤。注意：AstrBot 的原行为是不注入任何 skill
-            pass
         if allowed_skills == []:
             return ""  # [] = 禁用全部
 
-        # 3. 获取全部可用 skill
-        skill_mgr = SkillManager()  # Skill 管理器
+        # 2. 获取全部可用 skill
         runtime = self._cfg["provider_settings"]["computer_use_runtime"]    # 获取当前配置文件中的 [使用电脑能力] 配置(local/sandbox)
-        skills = skill_mgr.list_skills(active_only=True, runtime=runtime)   # 根据 runtime 获取所有可用 skill
+        skills = SkillManager().list_skills(active_only=True, runtime=runtime)   # 根据 runtime 获取所有可用 skill
 
-        # 4. 根据 persona 的 skills 配置按白名单过滤 skill
-        if allowed_skills is not None:
-            skills = [s for s in skills if s.name in allowed_skills]  # 白名单过滤；None 时全量放行
-        logger.debug(f"_get_skills_prompt: all skills={[s.name for s in skills]}")
+        # 3. 根据 persona 的 skills 配置按白名单过滤 skill
+        if allowed_skills is None:
+            return build_skills_prompt(skills)
 
-        if not skills:
-            return ""
+        skills = [s for s in skills if s.name in allowed_skills]  # 白名单过滤；None 时全量放行
 
         return build_skills_prompt(skills)
