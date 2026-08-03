@@ -225,9 +225,7 @@ class PluginToolManager:
             skill_prompt = ""   # skill 能力提示词
 
             if persona_id != "default": # 非 default 人格才允许注入skill 能力和工具
-                # 获取 skill 能力提示词
                 skill_prompt = await self._build_subagent_skill_prompt(persona_id)
-                # 获取 tools
                 tools = await self._build_subagent_tools(persona_id)
 
             # 注入 call_subagent_tool 给下层 SubAgent
