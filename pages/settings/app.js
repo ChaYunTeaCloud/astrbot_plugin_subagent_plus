@@ -20,7 +20,10 @@ const api = {
 
 const tabs = {
   basic: () => card("基础配置", `
-    ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。")}
+    ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。"
+      // ,'oninput="value=sanitizeNumber(this.value)"\
+      //   onkeydown="if (event.key.length === 1 && !/[0-9]/.test(event.key)) event.preventDefault()"'
+    )}
     ${txt("router_subagent_name", "路由 SubAgent 名称", "用于路由 SubAgent 的名称，默认值为 router。")}
   `),
   subAgentConfig: () => card("SubAgent 配置", `
@@ -28,27 +31,39 @@ const tabs = {
   `),
 };
 
+els.body.addEventListener("input", (e) => {
+  if (e.target.dataset?.p === "max_call_subagent_depth") {
+    e.target.value = e.target.value.replace(/^0+(?=\d)/, ""); // 移除前导零
+  }
+});
+els.body.addEventListener("keydown", (e) => {
+  if (e.target.dataset?.p === "max_call_subagent_depth") {
+    if (e.key.length === 1 && !/[0-9]/.test(e.key)) e.preventDefault()  // 阻止非数字输入
+  }
+});
+
+
 // ==================== UI 组件 ====================
-function card(title, content, show = true) {
+function card(title, content, attr = {}, show = true) {
   if (show === false) return "";
-  return `<div class="card">
+  return `<div class="card ${attr.class || ""}">  
     <h3>${title}</h3>
     ${content}
   </div>`;
 }
 
-function num(path, label, hint) {
+function num(path, label, hint, attr = {}) {
   return `<div class="field">
     <label>${label}</label>
-    <input type="number" data-p="${path}" value="${get(path, 0)}" />
+    <input type="number" data-p="${path}" value="${get(path, 0)}" ${attr} />
     ${hint ? `<p class="hint">${hint}</p>` : ""}
   </div>`;
 }
 
-function txt(path, label, hint) {
+function txt(path, label, hint, attr = {}) {
   return `<div class="field">
     <label>${label}</label>
-    <input type="text" data-p="${path}" value="${get(path, "")}" />
+    <input type="text" data-p="${path}" value="${get(path, "")}" ${attr} />
     ${hint ? `<p class="hint">${hint}</p>` : ""}
   </div>`;
 }
@@ -86,21 +101,21 @@ function refreshStatus() {
   setStatus(changed ? "配置已修改" : "已加载", changed ? "warn" : "ok");
 }
 
-// 给所有[data-p]元素绑定实时更新config的监听事件（由 show() 调用）
+// 给所有 [data-p] 元素绑定实时更新 config 的监听事件（由 show() 调用）
 function bindAll() {
-  document.querySelectorAll("#body [data-p]").forEach((el) => {
+  els.body.querySelectorAll("[data-p]").forEach((el) => {
     const handler = () => {
       let v = el.value;
-      if (el.type === "checkbox") v = el.checked; // 复选框直接赋值
-      else if (el.type === "number") {  // 数字框转换为浮点数
-        const n = parseFloat(v);  // 尝试转换为浮点数
+      if (el.type === "checkbox") v = el.checked;
+      else if (el.type === "number") {
+        const n = parseFloat(v);
         v = isNaN(n) ? v : n;
       }
       set(el.dataset.p, v);
       refreshStatus();
     };
-    el.addEventListener("input", handler);  // 监听按键/输入事件
-    el.addEventListener("change", handler); // 监听失焦或确认时事件（非文本类使用：如 checkbox、select）
+    el.addEventListener("input", handler);
+    el.addEventListener("change", handler);
   });
 }
 
