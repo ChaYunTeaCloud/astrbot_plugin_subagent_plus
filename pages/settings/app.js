@@ -67,7 +67,7 @@ function set(path, val) {
   o[ks[ks.length - 1]] = val;
 }
 
-// 设置状态
+// 设置状态显示
 function setStatus(text, cls) {
   els.status.textContent = text;
   els.status.className = `badge ${cls}`;
