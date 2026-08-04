@@ -283,6 +283,7 @@ class PluginToolManager:
         """根据 persona_id 构建 SubAgent skill 能力提示词"""
         return await self._get_skills_prompt(persona_id)
 
+
     def _get_computer_use_toolset(self) -> ToolSet:
         """根据当前配置文件中的 [使用电脑能力] 配置获取Agent需要使用的系统内置工具的集合。"""
         runtime = self._cfg_mgr["provider_settings"]["computer_use_runtime"]
