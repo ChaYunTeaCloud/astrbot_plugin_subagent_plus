@@ -30,7 +30,7 @@ class PluginConfigManager:
         self._config_path = self._plugin_data_dir / CONFIG_FILENAME
         self._config: Dict[str, Any] = self._load()
 
-    # ═══════════ 对外：整份读写 ═══════════
+
     @property
     def config(self) -> Dict[str, Any]:
         """获取完整配置字典。"""
@@ -41,7 +41,7 @@ class PluginConfigManager:
         self._config.update(config)
         return self._save()
 
-    # ═══════════ 对外：单项读写 ═══════════
+
     def get(self, key: str, default: Any = None) -> Any:
         """获取配置项。"""
         return self._config.get(key, default)
@@ -51,7 +51,7 @@ class PluginConfigManager:
         self._config[key] = value
         return self._save()
 
-    # ═══════════ 内部：文件 IO ═══════════
+
     def _load(self) -> Dict[str, Any]:
         """读取配置文件；不存在或损坏则用默认配置。"""
         if self._config_path.exists():
