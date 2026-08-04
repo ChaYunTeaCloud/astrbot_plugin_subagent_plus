@@ -202,9 +202,9 @@ class PluginToolManager:
             if max_depth != 0 and depth > max_depth:
                 return f"已达到最大嵌套深度{max_depth}，无法继续委派。"
 
-            # 从配置中查找 persona_id
+            # 从配置中查找 persona_id _cfg_mgr["subagent_orchestrator"]["agents"]
             agent_cfg = next(
-                (item for item in self._cfg_mgr["subagent_orchestrator"]["agents"] if item.get("name") == agent_name),
+                (item for item in self._cfg_mgr.get("subagent_orchestrator", {}).get("agents", []) if item.get("name") == agent_name),
                 None
             )
             if not agent_cfg or not agent_cfg.get("persona_id"):
