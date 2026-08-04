@@ -29,7 +29,6 @@ const tabs = {
 };
 
 // ==================== UI 组件 ====================
-
 function card(title, content, show = true) {
   if (show === false) return "";
   return `<div class="card">
@@ -57,6 +56,7 @@ function txt(path, label, hint) {
 
 
 // 按 . 分割路径读写配置，支持嵌套
+
 function get(path, def) {
   let v = config;
   for (const k of path.split(".")) {
