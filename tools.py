@@ -132,12 +132,18 @@ class PluginToolManager:
         
         self._tool_set = ToolSet()
         """用于缓存所有自定义工具"""
+        self._pcfg_mgr = PluginConfigManager()
+        """插件配置管理器实例"""
+
         self._context = context
         """上下文实例"""
         self._cfg_mgr = context.get_config()
         """AstrBot 配置实例"""
-        self._pcfg_mgr = PluginConfigManager()
-        """插件配置管理器实例"""
+        self._tool_mgr = context.get_llm_tool_manager()
+        """AstrBot 工具管理器实例"""
+        self._persona_mgr = context.persona_manager
+        """AstrBot 人格管理器实例"""
+
 
     def get_list_subagent_tool(self) -> FunctionTool:
         """获取 list_subagent 工具"""
@@ -303,9 +309,8 @@ class PluginToolManager:
     def _get_builtin_toolset_by_names(self, names: list[str]) -> ToolSet:
         """根据系统内置工具名称列表获取系统内置工具实例集合"""
         tool_set = ToolSet()
-        tool_mgr = self._context.get_llm_tool_manager()
         for name in names:
-            tool_set.add_tool(tool_mgr.get_builtin_tool(name))
+            tool_set.add_tool(self._tool_mgr.get_builtin_tool(name))
         return tool_set
 
     def _get_builtin_toolset_by_group_key(self, key: str) -> ToolSet:
@@ -330,7 +335,7 @@ class PluginToolManager:
         # 因此这里从 persona 实例获取 tools，与下面的获取 skill 方法保持一致
 
         # 1. 获取 persona 实例以及 tools 配置
-        persona = await self._context.persona_manager.get_persona(persona_id)
+        persona = await self._persona_mgr.get_persona(persona_id)
         if not persona:
             logger.warning(f"_get_plugin_toolset: Persona {persona_id} 不存在")
             return ToolSet()
@@ -339,7 +344,7 @@ class PluginToolManager:
             return ToolSet()  # [] = 禁用全部
 
         # 2. 获取全部可用插件工具
-        full_tool_set = self._context.get_llm_tool_manager().get_full_tool_set()
+        full_tool_set = self._tool_mgr.get_full_tool_set()
 
         # 3. 根据 persona 的 tools 配置按白名单过滤插件工具
         if allowed_tools is None:
@@ -351,7 +356,7 @@ class PluginToolManager:
     async def _get_skills_prompt(self, persona_id: str) -> str:
         """根据 Persona 的 skills 配置获取应注入的 Skill prompt"""
         # 1. 获取 persona 实例以及 skills 配置
-        persona = await self._context.persona_manager.get_persona(persona_id)
+        persona = await self._persona_mgr.get_persona(persona_id)
         if not persona:
             logger.warning(f"_get_skills_prompt: Persona {persona_id} 不存在")
             return f""
