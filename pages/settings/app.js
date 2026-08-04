@@ -8,7 +8,8 @@ const els = {
   btnSave: document.getElementById("btn-save"),
 };
 
-const config = {};
+const config = {};       // 当前配置（实时同步表单）
+const savedConfig = {};  // 已保存的配置快照（用于比较是否修改）
 
 const api = {
   get: () => bridge.apiGet("config"),
@@ -73,15 +74,21 @@ function setStatus(text, cls) {
   els.status.className = `badge ${cls}`;
 }
 
+// 检查 config 与 savedConfig 是否一致，自动更新状态
+function refreshStatus() {
+  const changed = JSON.stringify(config) !== JSON.stringify(savedConfig);
+  setStatus(changed ? "配置已修改" : "已加载", changed ? "warn" : "ok");
+}
+
 // 绑定所有事件
 function bindAll() {
-  document.querySelectorAll("#body [data-p]").forEach((el) => { // 绑定所有输入元素
-    el.onchange = el.oninput = () => {  // 监听输入元素的 change 和 input 事件
-      let v = el.value; // 获取当前输入值
-      if (el.type === "checkbox") v = el.checked; // 复选框值为 checked 状态
-      else if (el.type === "number") v = parseInt(v) || 0;  // 数字框值为整数，默认值为 0
-      set(el.dataset.p, v); // 更新配置
-      setStatus("配置已修改", "warn");  // 更新状态为警告
+  document.querySelectorAll("#body [data-p]").forEach((el) => {
+    el.onchange = el.oninput = () => {
+      let v = el.value;
+      if (el.type === "checkbox") v = el.checked;
+      else if (el.type === "number") v = parseInt(v) || 0;
+      set(el.dataset.p, v);
+      refreshStatus();
     };
   });
 }
@@ -104,7 +111,12 @@ document.getElementById("tabs").addEventListener("click", (e) => {
 els.btnSave.addEventListener("click", async () => {
   try {
     const result = await api.post(config);
-    setStatus(result.success ? "保存成功" : "保存失败", result.success ? "ok" : "err");
+    if (result.success) {
+      Object.assign(savedConfig, config);  // 保存成功后更新快照
+      setStatus("已加载", "ok");
+    } else {
+      setStatus("保存失败", "err");
+    }
   } catch (e) {
     setStatus("保存失败", "err");
     console.error(e);
@@ -115,7 +127,8 @@ els.btnSave.addEventListener("click", async () => {
 (async () => {
   await bridge.ready();
   try {
-    Object.assign(config, await api.get()); // 加载配置
+    Object.assign(config, await api.get()); // 加载当前配置到 config
+    Object.assign(savedConfig, config);  // 保存初始快照
     setStatus("已加载", "ok");
   } catch (e) {
     setStatus("加载失败", "err");
