@@ -37,7 +37,7 @@ class PluginConfigManager:
         return self._config
 
     def set_config(self, config: Dict[str, Any]) -> bool:
-        """用完整配置字典整体更新并保存。"""
+        """合并配置字典并保存。"""
         self._config.update(config)
         return self._save()
 
