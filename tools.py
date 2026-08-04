@@ -237,7 +237,7 @@ class PluginToolManager:
             result = f"Agent {agent_name} 将会拿到的工具:\n"
             for tool in tools:
                 result += f"{tool.name}: {tool.description}\n"
-            result = f"Agent {agent_name} 将会拿到的 skill 能力:\n"
+            result += f"Agent {agent_name} 将会拿到的 skill 能力:\n"
             result += f"{skill_prompt}\n"
 
             return result
