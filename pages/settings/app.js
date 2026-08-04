@@ -87,16 +87,18 @@ function refreshStatus() {
   setStatus(changed ? "配置已修改" : "已加载", changed ? "warn" : "ok");
 }
 
-// 绑定所有事件
+// 给所有[data-p]元素绑定实时更新config的监听事件
 function bindAll() {
   document.querySelectorAll("#body [data-p]").forEach((el) => {
-    el.onchange = el.oninput = () => {  // 监听所有输入事件
-      let v = el.value;   // 获取当前输入值
-      if (el.type === "checkbox") v = el.checked; // 复选框直接赋值
-      else if (el.type === "number") v = parseInt(v) || 0;  // 数字框转换为整数，0 表示无限嵌套
-      set(el.dataset.p, v); // 更新配置
+    const handler = () => {
+      let v = el.value;
+      if (el.type === "checkbox") v = el.checked;
+      else if (el.type === "number") v = parseInt(v) || 0;
+      set(el.dataset.p, v);
       refreshStatus();
     };
+    el.addEventListener("input", handler);  // 监听按键/输入事件
+    el.addEventListener("change", handler); // 监听失焦或确认时事件（非文本类使用：如 checkbox、select）
   });
 }
 
