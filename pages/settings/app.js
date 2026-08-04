@@ -127,7 +127,7 @@ els.btnSave.addEventListener("click", async () => {
       setStatus("保存失败", "err");
     }
   } catch (e) {
-    setStatus("保存失败", "err");
+    setStatus(e.message || "保存失败", "err");
     console.error(e);
   }
 });
@@ -140,7 +140,7 @@ els.btnSave.addEventListener("click", async () => {
     Object.assign(savedConfig, config);  // 保存初始快照
     setStatus("已加载", "ok");
   } catch (e) {
-    setStatus("加载失败", "err");
+    setStatus(e.message || "加载失败", "err");
     console.error(e);
   }
   show("basic");
