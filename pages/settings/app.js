@@ -19,18 +19,25 @@ const api = {
 };
 
 const tabs = {
-  basic: () => `<div class="card">
-    <h3>基础配置</h3>
+  basic: () => card("基础配置", `
     ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。", 0)}
     ${txt("router_subagent_name", "路由 SubAgent 名称", "用于路由 SubAgent 的名称，默认值为 router。")}
-  </div>`,
-  subAgentConfig: () => `<div class="card">
-    <h3>SubAgent 配置</h3>
+  `),
+  subAgentConfig: () => card("SubAgent 配置", `
     <p class="hint">这里将展示 SubAgent 相关配置项（待填充）。</p>
-  </div>`,
+  `),
 };
 
 // ==================== UI 组件 ====================
+
+function card(title, content, show = true) {
+  if (show === false) return "";
+  return `<div class="card">
+    <h3>${title}</h3>
+    ${content}
+  </div>`;
+}
+
 function num(path, label, hint) {
   return `<div class="field">
     <label>${label}</label>
@@ -113,7 +120,7 @@ els.btnSave.addEventListener("click", async () => {
     const result = await api.post(config);
     if (result.success) {
       Object.assign(savedConfig, config);  // 保存成功后更新快照
-      setStatus("已加载", "ok");
+      setStatus("保存成功", "ok");
     } else {
       setStatus("保存失败", "err");
     }
