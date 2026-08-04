@@ -21,7 +21,7 @@ const api = {
 const tabs = {
   basic: () => `<div class="card">
     <h3>基础配置</h3>
-    ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，最小值为 1。")}
+    ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。", 0)}
     ${txt("router_subagent_name", "路由 SubAgent 名称", "用于路由 SubAgent 的名称，默认值为 router。")}
   </div>`,
   subAgentConfig: () => `<div class="card">
