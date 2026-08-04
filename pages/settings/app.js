@@ -56,7 +56,6 @@ function txt(path, label, hint) {
 
 
 // 按 . 分割路径读写配置，支持嵌套
-
 function get(path, def) {
   let v = config;
   for (const k of path.split(".")) {
@@ -87,13 +86,16 @@ function refreshStatus() {
   setStatus(changed ? "配置已修改" : "已加载", changed ? "warn" : "ok");
 }
 
-// 给所有[data-p]元素绑定实时更新config的监听事件
+// 给所有[data-p]元素绑定实时更新config的监听事件（由 show() 调用）
 function bindAll() {
   document.querySelectorAll("#body [data-p]").forEach((el) => {
     const handler = () => {
       let v = el.value;
-      if (el.type === "checkbox") v = el.checked;
-      else if (el.type === "number") v = parseInt(v) || 0;
+      if (el.type === "checkbox") v = el.checked; // 复选框直接赋值
+      else if (el.type === "number") {  // 数字框转换为浮点数
+        const n = parseFloat(v);  // 尝试转换为浮点数
+        v = isNaN(n) ? v : n;
+      }
       set(el.dataset.p, v);
       refreshStatus();
     };
