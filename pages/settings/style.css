@@ -50,6 +50,11 @@ body {
   color: #d4a017;
 }
 
+.badge.warn {
+  background: #fff7e0;
+  color: #d4a017;
+}
+
 .badge.ok {
   background: #e8f5e9;
   color: #2e7d32;
