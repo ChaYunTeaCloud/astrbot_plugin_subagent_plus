@@ -75,18 +75,14 @@ function setStatus(text, cls) {
 
 // 绑定所有事件
 function bindAll() {
-  document.querySelectorAll("#body [data-p]").forEach((el) => {
-    el.onchange = el.oninput = () => setStatus("配置已修改", "warn");
-  });
-}
-
-// 同步表单到配置
-function syncFromForm() {
-  document.querySelectorAll("#body [data-p]").forEach((el) => {
-    let v = el.value;
-    if (el.type === "checkbox") v = el.checked;
-    else if (el.type === "number") v = parseInt(v) || 0;
-    set(el.dataset.p, v);
+  document.querySelectorAll("#body [data-p]").forEach((el) => { // 绑定所有输入元素
+    el.onchange = el.oninput = () => {  // 监听输入元素的 change 和 input 事件
+      let v = el.value; // 获取当前输入值
+      if (el.type === "checkbox") v = el.checked; // 复选框值为 checked 状态
+      else if (el.type === "number") v = parseInt(v) || 0;  // 数字框值为整数，默认值为 0
+      set(el.dataset.p, v); // 更新配置
+      setStatus("配置已修改", "warn");  // 更新状态为警告
+    };
   });
 }
 
@@ -106,7 +102,6 @@ document.getElementById("tabs").addEventListener("click", (e) => {
 
 // 绑定保存按钮点击事件
 els.btnSave.addEventListener("click", async () => {
-  syncFromForm();
   try {
     const result = await api.post(config);
     setStatus(result.success ? "保存成功" : "保存失败", result.success ? "ok" : "err");
