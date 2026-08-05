@@ -134,10 +134,9 @@ class PluginToolManager:
         """用于缓存所有自定义工具"""
         self._context = context
         """上下文实例"""
-        self._cfg_mgr = context.get_config()
-        """AstrBot 配置实例"""
         self._pcfg_mgr = PluginConfigManager()
         """插件配置管理器实例"""
+
 
     def get_list_subagent_tool(self) -> FunctionTool:
         """获取 list_subagent 工具"""
@@ -208,6 +207,9 @@ class PluginToolManager:
                 agent_name: 要调用的 SubAgent 名称
                 input: 传递给 SubAgent 的任务描述，为空时使用最近一条用户消息
             """
+            umo = event.unified_msg_origin          # 获取当前会话 umo
+            cfg = self._context.get_config(umo=umo) # 获取当前会话 AstrBotConfig
+
             max_depth: int = self._pcfg_mgr.get("max_call_subagent_depth")  # 最大递归调用深度
             logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}，最大深度{max_depth}")
             if max_depth != 0 and depth > max_depth:
@@ -215,7 +217,7 @@ class PluginToolManager:
 
             # 从配置中查找 persona_id _cfg_mgr["subagent_orchestrator"]["agents"]，获取 agent_name 对应的配置项
             agent_cfg = next(
-                (item for item in self._cfg_mgr.get("subagent_orchestrator", {}).get("agents", [])
+                (item for item in cfg["subagent_orchestrator"]["agents"]
                     if item.get("name") == agent_name),
                 None
             )
@@ -236,8 +238,8 @@ class PluginToolManager:
             tool_set = ToolSet()  # SubAgent 工具集合
 
             if persona_id != "default": # 非 default 人格才允许注入skill 能力和工具
-                skill_prompt = await self._build_subagent_skill_prompt_by_persona_id(persona_id)
-                tool_set.merge(await self._build_subagent_tools_by_persona_id(persona_id))
+                skill_prompt = await self._build_subagent_skill_prompt_by_persona_id(persona_id, umo)
+                tool_set.merge(await self._build_subagent_tools_by_persona_id(persona_id, umo))
 
             # 注入 call_subagent_tool 和 list_subagent_tool 给下层 SubAgent
             next_depth = depth + 1
@@ -245,22 +247,20 @@ class PluginToolManager:
             tool_set.add_tool(self.get_list_subagent_tool())
 
             # 获取 Provider ID（优先使用 handoff_tool 配置的专用 Provider）
-            umo = event.unified_msg_origin
             prov_id = getattr(handoff_tool, "provider_id", None) or await self._context.get_current_chat_provider_id(umo)
 
             # 获取系统提示词（人格设定 + skill 能力提示词）
             system_prompt = (agent.instructions or "") + (f"\n\n{skill_prompt}" if skill_prompt else "")
 
             # 获取 agent 配置
-            cfg = self._context.get_config(umo=umo)
-            prov_settings: dict = cfg.get("provider_settings", {})
-            agent_max_step = int(prov_settings.get("max_agent_step", 30))
+            agent_max_step = int(cfg["provider_settings"]["max_agent_step"])
+            
 
             # 获取 prompt
             prompt = input if input else event.message_str
 
             # 调用 SubAgent
-            logger.info(f"call_subagent: 正在调用 Agent {agent_name}，prov_id={prov_id}，工具数={len(tool_set)}")
+            logger.info(f"call_subagent: 正在调用 Agent {agent_name},prov_id={prov_id}，工具数={len(tool_set)}")
             logger.debug(f"call_subagent: 任务描述: {prompt}")
             logger.debug(f"call_subagent: 系统提示词(长度): {len(system_prompt)}")
             logger.debug(f"call_subagent: 可用工具列表: {[t.name for t in tool_set.tools]}")
@@ -297,25 +297,26 @@ class PluginToolManager:
         )
 
 
-    async def _build_subagent_tools_by_persona_id(self, persona_id: str) -> ToolSet:
+    async def _build_subagent_tools_by_persona_id(self, persona_id: str, umo: str) -> ToolSet:
         """根据 persona_id 构建 SubAgent 工具集合"""
         tool_set = ToolSet()
 
         tool_set.merge(await self._get_plugin_toolset_by_persona_id(persona_id))
-        tool_set.merge(self._get_computer_use_toolset())
+        tool_set.merge(self._get_computer_use_toolset(umo))
         tool_set.merge(self._get_builtin_toolset_by_group_key("neo_skill"))
 
         return tool_set
 
-    async def _build_subagent_skill_prompt_by_persona_id(self, persona_id: str) -> str:
+    async def _build_subagent_skill_prompt_by_persona_id(self, persona_id: str, umo: str) -> str:
         """根据 persona_id 构建 SubAgent skill 能力提示词"""
-        return await self._get_skills_prompt_by_persona_id(persona_id)
+        return await self._get_skills_prompt_by_persona_id(persona_id, umo)
 
 
-    def _get_computer_use_toolset(self) -> ToolSet:
+    def _get_computer_use_toolset(self, umo: str) -> ToolSet:
         """根据当前配置文件中的 [使用电脑能力] 配置获取Agent需要使用的系统内置工具的集合。"""
-        runtime = self._cfg_mgr["provider_settings"]["computer_use_runtime"]
-        booter  = self._cfg_mgr["provider_settings"]["sandbox"]["booter"]
+        cfg = self._context.get_config(umo=umo)
+        runtime = cfg["provider_settings"]["computer_use_runtime"]
+        booter  = cfg["provider_settings"]["sandbox"]["booter"]
 
         names = list(self._BUILTIN_TOOL_GROUPS["runtime_common"])
 
@@ -376,7 +377,7 @@ class PluginToolManager:
         return ToolSet(tools=[t for t in full_tool_set.tools if t.name in allowed_tools])
 
 
-    async def _get_skills_prompt_by_persona_id(self, persona_id: str) -> str:
+    async def _get_skills_prompt_by_persona_id(self, persona_id: str, umo: str) -> str:
         """根据 Persona 的 skills 配置获取应注入的 Skill prompt"""
         # 1. 获取 persona 实例以及 skills 配置
         persona = await self._context.persona_manager.get_persona(persona_id)
@@ -388,7 +389,8 @@ class PluginToolManager:
             return ""  # [] = 禁用全部
 
         # 2. 获取全部可用 skill
-        runtime = self._cfg_mgr["provider_settings"]["computer_use_runtime"]    # 获取当前配置文件中的 [使用电脑能力] 配置(local/sandbox)
+        cfg = self._context.get_config(umo=umo)
+        runtime = cfg["provider_settings"]["computer_use_runtime"]    # 获取当前配置文件中的 [使用电脑能力] 配置(local/sandbox)
         skills = SkillManager().list_skills(active_only=True, runtime=runtime)   # 根据 runtime 获取所有可用 skill
 
         # 3. 根据 persona 的 skills 配置按白名单过滤 skill
