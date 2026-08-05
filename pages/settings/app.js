@@ -154,7 +154,7 @@ els.btnSave.addEventListener("click", async () => {
   try {
     const result = await api.post(config);
     if (result.success) {
-      Object.assign(savedConfig, config);  // 保存成功后更新快照
+      Object.assign(savedConfig, JSON.parse(JSON.stringify(config)));  // 深拷贝快照
       setStatus("保存成功", "ok");
     } else {
       setStatus("保存失败", "err");
@@ -170,7 +170,7 @@ els.btnSave.addEventListener("click", async () => {
   await bridge.ready();
   try {
     Object.assign(config, await api.get()); // 加载当前配置到 config
-    Object.assign(savedConfig, config);  // 保存初始快照
+    Object.assign(savedConfig, JSON.parse(JSON.stringify(config)));  // 深拷贝初始快照
     setStatus("已加载", "ok");
   } catch (e) {
     setStatus(e.message || "加载失败", "err");
