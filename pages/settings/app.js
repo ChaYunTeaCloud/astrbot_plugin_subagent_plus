@@ -122,8 +122,8 @@ function bindAll() {
   els.body.querySelectorAll("[data-p]").forEach((el) => {
     const handler = () => {
       let v = el.value;
-      if (el.type === "checkbox") v = el.checked;
-      else if (el.type === "number") {
+      if (el.type === "checkbox") v = el.checked; // 处理复选框
+      else if (el.type === "number") {  // 处理数字输入框
         const n = parseFloat(v);
         v = isNaN(n) ? v : n;
       }
