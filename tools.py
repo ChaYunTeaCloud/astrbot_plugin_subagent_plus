@@ -162,12 +162,16 @@ class PluginToolManager:
                     # "provider_id": h.provider_id,    # 专用 Provider ID
                 })
             # yield event.plain_result(f"已注册的 SubAgent: {result}")
+            logger.debug(f"list_subagent: 已注册的 SubAgent: {result}")
             return f"已有的 SubAgent 列表: {result}"
 
         tool = FunctionTool(
             name="list_subagent",
             description="获取现有的 SubAgent 列表",
-            parameters={},
+            parameters={
+                "type": "object",
+                "properties": {},
+            },
             handler=_handler,
         )
         self._tool_set.add_tool(tool)
@@ -196,8 +200,14 @@ class PluginToolManager:
             depth: 递归调用深度，首次调用时为 1, 后续调用时递增。
         """
 
-        async def _handler(event: AstrMessageEvent, agent_name: str) -> str:
-            """调用指定 SubAgent"""
+        async def _handler(event: AstrMessageEvent, agent_name: str, input: str = "") -> str:
+            """调用指定 SubAgent
+
+            Args:
+                event: 消息事件
+                agent_name: 要调用的 SubAgent 名称
+                input: 传递给 SubAgent 的任务描述，为空时使用最近一条用户消息
+            """
             max_depth: int = self._pcfg_mgr.get("max_call_subagent_depth")  # 最大递归调用深度
             logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}，最大深度{max_depth}")
             if max_depth != 0 and depth > max_depth:
@@ -205,49 +215,70 @@ class PluginToolManager:
 
             # 从配置中查找 persona_id _cfg_mgr["subagent_orchestrator"]["agents"]，获取 agent_name 对应的配置项
             agent_cfg = next(
-                (item for item in self._cfg_mgr.get("subagent_orchestrator", {}).get("agents", []) 
+                (item for item in self._cfg_mgr.get("subagent_orchestrator", {}).get("agents", [])
                     if item.get("name") == agent_name),
                 None
             )
-            if not agent_cfg or not agent_cfg.get("persona_id"):
+            persona_id = agent_cfg.get("persona_id") if agent_cfg else None
+            if not persona_id:
                 return f"Agent {agent_name} 不存在或未配置人格设定"
-            persona_id: str = agent_cfg["persona_id"]   # 人格设定id
 
             # 从 handoffs 中查找 Agent 实例，获取 agent_name 对应的实例项
             handoff_tool = next(
                 (h for h in self._context.subagent_orchestrator.handoffs if h.agent.name == agent_name),
                 None
             )
-            if not handoff_tool:
+            agent = handoff_tool.agent if handoff_tool else None
+            if not agent:
                 return f"Agent {agent_name} 不存在"
-            agent = handoff_tool.agent  # Agent 实例
 
-            tools : list[FunctionTool] = [] # 存储所有工具
             skill_prompt = ""   # skill 能力提示词
+            tool_set = ToolSet()  # SubAgent 工具集合
 
             if persona_id != "default": # 非 default 人格才允许注入skill 能力和工具
                 skill_prompt = await self._build_subagent_skill_prompt_by_persona_id(persona_id)
-                tools = await self._build_subagent_tools_by_persona_id(persona_id)
+                tool_set.merge(await self._build_subagent_tools_by_persona_id(persona_id))
 
             # 注入 call_subagent_tool 和 list_subagent_tool 给下层 SubAgent
             next_depth = depth + 1
-            tools.append(self._make_call_subagent_tool(next_depth))
-            tools.append(self.get_list_subagent_tool(next_depth))
-            
-            # 调用 SubAgent
-            # 先不实现真正的调用逻辑，先测试获取是否正常，故此处返回都拿到了什么内容
-            result = ""
-            result = f"Agent {agent_name} 将会拿到的工具:\n"
-            for tool in tools:
-                result += f"{tool.name}: {tool.description}\n"
-            result += f"Agent {agent_name} 将会拿到的 skill 能力:\n"
-            result += f"{skill_prompt}\n"
+            tool_set.add_tool(self._make_call_subagent_tool(next_depth))
+            tool_set.add_tool(self.get_list_subagent_tool())
 
-            return result
+            # 获取 Provider ID（优先使用 handoff_tool 配置的专用 Provider）
+            umo = event.unified_msg_origin
+            prov_id = getattr(handoff_tool, "provider_id", None) or await self._context.get_current_chat_provider_id(umo)
+
+            # 获取系统提示词（人格设定 + skill 能力提示词）
+            system_prompt = (agent.instructions or "") + (f"\n\n{skill_prompt}" if skill_prompt else "")
+
+            # 获取 agent 配置
+            cfg = self._context.get_config(umo=umo)
+            prov_settings: dict = cfg.get("provider_settings", {})
+            agent_max_step = int(prov_settings.get("max_agent_step", 30))
+
+            # 获取 prompt
+            prompt = input if input else event.message_str
+
+            # 调用 SubAgent
+            logger.info(f"call_subagent: 正在调用 Agent {agent_name}，prov_id={prov_id}，工具数={len(tool_set)}")
+            logger.debug(f"call_subagent: 任务描述: {prompt}")
+            logger.debug(f"call_subagent: 系统提示词(长度): {len(system_prompt)}")
+            logger.debug(f"call_subagent: 可用工具列表: {[t.name for t in tool_set.tools]}")
+            
+            llm_resp = await self._context.tool_loop_agent(
+                event=event,
+                chat_provider_id=prov_id,
+                prompt=prompt,
+                system_prompt=system_prompt,
+                tools=tool_set,
+                max_steps=agent_max_step,
+            )
+
+            return llm_resp.completion_text
 
         return FunctionTool(
             name="call_subagent",
-            description="调用指定 SubAgent,使用前需先用 list_subagent 工具获取 SubAgent 列表",
+            description="调用指定 SubAgent,使用前必须先用 list_subagent 工具获取正确的 SubAgent 列表",
             parameters={
                 "type": "object",
                 "properties": {
@@ -255,32 +286,26 @@ class PluginToolManager:
                         "type": "string",
                         "description": "要调用的 SubAgent 名称",
                     },
+                    "input": {
+                        "type": "string",
+                        "description": "传递给 SubAgent 的任务描述，为空时使用最近一条用户消息",
+                    },
                 },
                 "required": ["agent_name"],
             },
             handler=_handler,
         )
-    
-    def _build_subagent_request(self, persona_id: str) -> dict:
-        """根据 persona_id 构建 SubAgent 请求信息"""
-        return {
-            "persona_id": persona_id,
-            "skill_prompt": "",
-            "tools": [],
-        }
 
 
-    async def _build_subagent_tools_by_persona_id(self, persona_id: str) -> list[FunctionTool]:
+    async def _build_subagent_tools_by_persona_id(self, persona_id: str) -> ToolSet:
         """根据 persona_id 构建 SubAgent 工具集合"""
-        tools : list[FunctionTool] = []
+        tool_set = ToolSet()
 
-        tools.extend((await self._get_plugin_toolset_by_persona_id(persona_id)).tools)
+        tool_set.merge(await self._get_plugin_toolset_by_persona_id(persona_id))
+        tool_set.merge(self._get_computer_use_toolset())
+        tool_set.merge(self._get_builtin_toolset_by_group_key("neo_skill"))
 
-        tools.extend(self._get_computer_use_toolset().tools)
-
-        tools.extend(self._get_builtin_toolset_by_group_key("neo_skill").tools)
-
-        return tools
+        return tool_set
 
     async def _build_subagent_skill_prompt_by_persona_id(self, persona_id: str) -> str:
         """根据 persona_id 构建 SubAgent skill 能力提示词"""
