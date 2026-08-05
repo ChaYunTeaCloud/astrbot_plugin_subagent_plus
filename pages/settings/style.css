@@ -203,3 +203,32 @@ body {
 .field .hint {
   margin: 0;
 }
+
+.field-tip-bubble {
+  position: absolute;
+  padding: 6px 12px;
+  background: #ffebee;
+  color: #c62828;
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: tipFadeIn 0.15s ease-out;
+}
+
+.field-tip-bubble::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 12px;
+  border: 4px solid transparent;
+  border-bottom-color: #ffebee;
+  border-top: 0;
+}
+
+@keyframes tipFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

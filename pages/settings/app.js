@@ -21,8 +21,8 @@ const api = {
 const tabs = {
   basic: () => card("基础配置", `
     ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。"
-      ,'oninput="value=sanitizeNumber(this.value)"'   // 移除前导零
-      +'onkeydown="if (event.key.length === 1 && !/[0-9]/.test(event.key)) event.preventDefault()"' // 阻止非数字输入
+      // ,'oninput="value=value.replace(/^0+(?=\d)|-/g, \'\')"'   // 移除前导零和负号
+      // +'onkeydown="if (event.key.length === 1 && !/[0-9]/.test(event.key)) event.preventDefault()"' // 阻止非数字输入
     )}
     ${txt("router_subagent_name", "路由 SubAgent 名称", "用于路由 SubAgent 的名称，默认值为 router。")}
   `),
@@ -31,16 +31,19 @@ const tabs = {
   `),
 };
 
-// els.body.addEventListener("input", (e) => {
-//   if (e.target.dataset?.p === "max_call_subagent_depth") {
-//     e.target.value = e.target.value.replace(/^0+(?=\d)/, ""); // 移除前导零
-//   }
-// });
-// els.body.addEventListener("keydown", (e) => {
-//   if (e.target.dataset?.p === "max_call_subagent_depth") {
-//     if (e.key.length === 1 && !/[0-9]/.test(e.key)) e.preventDefault()  // 阻止非数字输入
-//   }
-// });
+els.body.addEventListener("input", (e) => {
+  if (e.target.dataset?.p === "max_call_subagent_depth") {
+    e.target.value = e.target.value.replace(/^0+(?=\d)|-/g, ""); // 移除前导零和负号
+  }
+});
+els.body.addEventListener("keydown", (e) => {
+  if (e.target.dataset?.p === "max_call_subagent_depth") {
+    if (e.key.length === 1 && !/[0-9]/.test(e.key)) {
+      e.preventDefault();
+      showTip(e.target, "只允许输入 0 或正整数");
+    }
+  }
+});
 
 
 // ==================== UI 组件 ====================
@@ -93,6 +96,19 @@ function set(path, val) {
 function setStatus(text, cls) {
   els.status.textContent = text;
   els.status.className = `badge ${cls}`;
+}
+
+// 在元素旁显示气泡提示（绝对定位，不影响布局）
+function showTip(el, msg) {
+  document.querySelector(".field-tip-bubble")?.remove();
+  const tip = document.createElement("div");
+  tip.className = "field-tip-bubble";
+  tip.textContent = msg;
+  document.body.appendChild(tip);
+  const rect = el.getBoundingClientRect();
+  tip.style.left = (rect.left + window.scrollX) + "px";
+  tip.style.top = (rect.bottom + window.scrollY + 6) + "px";
+  setTimeout(() => tip.remove(), 2000);
 }
 
 // 检查 config 与 savedConfig 是否一致，自动更新状态
