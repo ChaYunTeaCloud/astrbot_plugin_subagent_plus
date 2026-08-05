@@ -178,6 +178,7 @@ class PluginToolManager:
         获取 call_subagent 工具
         注: `self._tool_set` 只缓存根实例,因为后续要实现控制嵌套深度所以不能使用 self._tool_set 缓存单一实例
             因此 make 方法内部将会使用闭包绑定方式实现——每次注入给下层 SubAgent 的工具都是"深度+1"的新实例
+            当最大递归调用深度为 0 时，表示不限制深度，即无限嵌套
         """
         tool = self._tool_set.get_tool("call_subagent")
         if tool:
@@ -202,34 +203,36 @@ class PluginToolManager:
             if max_depth != 0 and depth > max_depth:
                 return f"已达到最大嵌套深度{max_depth}，无法继续委派。"
 
-            # 从配置中查找 persona_id _cfg_mgr["subagent_orchestrator"]["agents"]
+            # 从配置中查找 persona_id _cfg_mgr["subagent_orchestrator"]["agents"]，获取 agent_name 对应的配置项
             agent_cfg = next(
-                (item for item in self._cfg_mgr.get("subagent_orchestrator", {}).get("agents", []) if item.get("name") == agent_name),
+                (item for item in self._cfg_mgr.get("subagent_orchestrator", {}).get("agents", []) 
+                    if item.get("name") == agent_name),
                 None
             )
             if not agent_cfg or not agent_cfg.get("persona_id"):
                 return f"Agent {agent_name} 不存在或未配置人格设定"
-            persona_id: str = agent_cfg["persona_id"]
+            persona_id: str = agent_cfg["persona_id"]   # 人格设定id
 
-            # 从 handoffs 中查找 Agent 实例
+            # 从 handoffs 中查找 Agent 实例，获取 agent_name 对应的实例项
             handoff_tool = next(
                 (h for h in self._context.subagent_orchestrator.handoffs if h.agent.name == agent_name),
                 None
             )
             if not handoff_tool:
                 return f"Agent {agent_name} 不存在"
-            agent = handoff_tool.agent
+            agent = handoff_tool.agent  # Agent 实例
 
             tools : list[FunctionTool] = [] # 存储所有工具
             skill_prompt = ""   # skill 能力提示词
 
             if persona_id != "default": # 非 default 人格才允许注入skill 能力和工具
-                skill_prompt = await self._build_subagent_skill_prompt(persona_id)
-                tools = await self._build_subagent_tools(persona_id)
+                skill_prompt = await self._build_subagent_skill_prompt_by_persona_id(persona_id)
+                tools = await self._build_subagent_tools_by_persona_id(persona_id)
 
-            # 注入 call_subagent_tool 给下层 SubAgent
+            # 注入 call_subagent_tool 和 list_subagent_tool 给下层 SubAgent
             next_depth = depth + 1
             tools.append(self._make_call_subagent_tool(next_depth))
+            tools.append(self.get_list_subagent_tool(next_depth))
             
             # 调用 SubAgent
             # 先不实现真正的调用逻辑，先测试获取是否正常，故此处返回都拿到了什么内容
@@ -244,7 +247,7 @@ class PluginToolManager:
 
         return FunctionTool(
             name="call_subagent",
-            description="调用指定 SubAgent",
+            description="调用指定 SubAgent,使用前需先用 list_subagent 工具获取 SubAgent 列表",
             parameters={
                 "type": "object",
                 "properties": {
@@ -267,11 +270,11 @@ class PluginToolManager:
         }
 
 
-    async def _build_subagent_tools(self, persona_id: str) -> list[FunctionTool]:
+    async def _build_subagent_tools_by_persona_id(self, persona_id: str) -> list[FunctionTool]:
         """根据 persona_id 构建 SubAgent 工具集合"""
         tools : list[FunctionTool] = []
 
-        tools.extend((await self._get_plugin_toolset(persona_id)).tools)
+        tools.extend((await self._get_plugin_toolset_by_persona_id(persona_id)).tools)
 
         tools.extend(self._get_computer_use_toolset().tools)
 
@@ -279,9 +282,9 @@ class PluginToolManager:
 
         return tools
 
-    async def _build_subagent_skill_prompt(self, persona_id: str) -> str:
+    async def _build_subagent_skill_prompt_by_persona_id(self, persona_id: str) -> str:
         """根据 persona_id 构建 SubAgent skill 能力提示词"""
-        return await self._get_skills_prompt(persona_id)
+        return await self._get_skills_prompt_by_persona_id(persona_id)
 
 
     def _get_computer_use_toolset(self) -> ToolSet:
@@ -314,7 +317,7 @@ class PluginToolManager:
         return self._get_builtin_toolset_by_names(names)
 
 
-    async def _get_plugin_toolset(self, persona_id: str) -> ToolSet:
+    async def _get_plugin_toolset_by_persona_id(self, persona_id: str) -> ToolSet:
         """根据 Agent 对应的 Persona 的 tools 配置获取插件工具集合。
         注：
         - handoff 工具由 AstrBot 手动注入给 MainAgent,不属于插件工具集合。
@@ -348,7 +351,7 @@ class PluginToolManager:
         return ToolSet(tools=[t for t in full_tool_set.tools if t.name in allowed_tools])
 
 
-    async def _get_skills_prompt(self, persona_id: str) -> str:
+    async def _get_skills_prompt_by_persona_id(self, persona_id: str) -> str:
         """根据 Persona 的 skills 配置获取应注入的 Skill prompt"""
         # 1. 获取 persona 实例以及 skills 配置
         persona = await self._context.persona_manager.get_persona(persona_id)
