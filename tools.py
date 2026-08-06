@@ -8,7 +8,7 @@ from .config_manager import PluginConfigManager
 
 class PluginToolManager:
 
-    def __init__(self, context: Context):
+    def __init__(self, context: Context, pcfg_mgr: PluginConfigManager):
         self._BUILTIN_TOOL_GROUPS = {
             # ═══════════════════════════════════════════════════════════════
             # 说明：
@@ -134,7 +134,7 @@ class PluginToolManager:
         """用于缓存所有自定义工具"""
         self._context = context
         """上下文实例"""
-        self._pcfg_mgr = PluginConfigManager()
+        self._pcfg_mgr = pcfg_mgr
         """插件配置管理器实例"""
 
 

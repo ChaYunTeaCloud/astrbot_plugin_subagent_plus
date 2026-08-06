@@ -13,7 +13,7 @@ class MyPlugin(Star):
 
         logger.debug(f"PluginConfigManager 初始化，插件名: {self.name}")
         self._pcfg_mgr = PluginConfigManager(self.name)
-        self._p_tool_mgr = PluginToolManager(context)
+        self._p_tool_mgr = PluginToolManager(context, self._pcfg_mgr)
         register_page_apis(context, self._pcfg_mgr, self.name)
 
     async def initialize(self):

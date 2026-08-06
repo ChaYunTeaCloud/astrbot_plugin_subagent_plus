@@ -5,29 +5,29 @@ from astrbot.api.web import json_response, error_response, request
 from .config_manager import PluginConfigManager
 
 
-def register_page_apis(context: Context, cfg_mgr: PluginConfigManager, plugin_name: str):
+def register_page_apis(context: Context, pcfg_mgr: PluginConfigManager, plugin_name: str):
     """注册页面相关的所有后端 API"""
     context.register_web_api(
         f"/{plugin_name}/config",
-        lambda: _get_config(cfg_mgr),
+        lambda: _get_config(pcfg_mgr),
         ["GET"],
         "获取插件配置",
     )
     context.register_web_api(
         f"/{plugin_name}/config",
-        lambda: _save_config(cfg_mgr),
+        lambda: _save_config(pcfg_mgr),
         ["POST"],
         "保存插件配置",
     )
     context.register_web_api(
         f"/{plugin_name}/config/<key>",
-        lambda key: _get_single_config(cfg_mgr, key),
+        lambda key: _get_single_config(pcfg_mgr, key),
         ["GET"],
         "获取单个配置项",
     )
     context.register_web_api(
         f"/{plugin_name}/config/<key>",
-        lambda key: _set_single_config(cfg_mgr, key),
+        lambda key: _set_single_config(pcfg_mgr, key),
         ["POST"],
         "设置单个配置项",
     )
