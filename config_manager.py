@@ -4,6 +4,7 @@ from typing import Any, Dict
 from astrbot.api import logger
 from astrbot.api.star import StarTools
 
+# ==================== 系统内置工具集映射表 ====================
 _BUILTIN_TOOL_GROUPS: Dict[str, list[str]] = {
     # ═══════════════════════════════════════════════════════════════
     # 说明：
