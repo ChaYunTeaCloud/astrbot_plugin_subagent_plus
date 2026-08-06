@@ -37,7 +37,8 @@ const tabs = {
           "路由 SubAgent 名称",
           subagentNames,
           "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。",
-        ), get("router_mode_enabled", false)
+        ),
+        get("router_mode_enabled")
       )}`
     return card(card_title, card_body);
   },
