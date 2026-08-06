@@ -36,7 +36,7 @@ def register_page_apis(context: Context, cfg_mgr: PluginConfigManager, plugin_na
 async def _get_config(cfg_mgr: PluginConfigManager):
     """获取完整配置"""
     try:
-        return json_response(cfg_mgr.config)
+        return json_response(cfg_mgr)
     except Exception as e:
         logger.error(f"获取配置失败: {e}")
         return error_response(str(e), status_code=500)

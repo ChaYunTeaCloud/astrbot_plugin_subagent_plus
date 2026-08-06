@@ -32,11 +32,6 @@ class PluginConfigManager(dict):
         self.update(self._load())
 
 
-    @property
-    def config(self) -> "PluginConfigManager":
-        """获取完整配置字典（向后兼容）。"""
-        return self
-
     def set_config(self, config: Dict[str, Any]) -> bool:
         """合并配置字典并保存。"""
         self.update(config)
