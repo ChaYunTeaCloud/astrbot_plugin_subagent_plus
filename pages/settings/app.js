@@ -8,9 +8,6 @@ const els = {
   btnSave: document.getElementById("btn-save"),
 };
 
-const config = {};       // 当前配置（实时同步表单）
-const savedConfig = {};  // 已保存的配置快照（用于比较是否修改）
-
 const api = {
   get: () => bridge.apiGet("config"),
   post: (cfg) => bridge.apiPost("config", cfg),
@@ -18,6 +15,10 @@ const api = {
   set_by_path: (path, val) => bridge.apiPost(`config/${path}`, { value: val }),
   get_builtin_tools_info: () => bridge.apiGet("builtin_tools"),
 };
+
+const config = {};       // 当前配置（实时同步表单）
+const savedConfig = {};  // 已保存的配置快照（用于比较是否修改）
+let builtinToolsInfo = null;  // 内置工具信息（初始化时获取一次）
 
 const tabs = {
   basic: () => card("基础配置", `
@@ -30,7 +31,7 @@ const tabs = {
   subAgentConfig: () => card("SubAgent 配置", `
     <p class="hint">这里将展示 SubAgent 相关配置项（待填充）。</p>
   `),
-  test: async () => card("测试", JSON.stringify(await api.get_builtin_tools_info(), null, 2)),
+  test: () => card("测试", JSON.stringify(builtinToolsInfo, null, 2)),
 };
 
 els.body.addEventListener("input", (e) => {
@@ -138,10 +139,10 @@ function bindAll() {
 }
 
 // 显示 Tab 内容
-async function show(name) {
+function show(name) {
   document.querySelectorAll("#tabs .tab").forEach((t) => t.classList.remove("on"));
   document.querySelector(`#tabs .tab[data-t="${name}"]`)?.classList.add("on");
-  els.body.innerHTML = await (tabs[name] || tabs.basic)();
+  els.body.innerHTML = (tabs[name] || tabs.basic)();
   bindAll();
 }
 
@@ -173,6 +174,7 @@ els.btnSave.addEventListener("click", async () => {
   try {
     Object.assign(config, await api.get()); // 加载当前配置到 config
     Object.assign(savedConfig, JSON.parse(JSON.stringify(config)));  // 深拷贝初始快照
+    builtinToolsInfo = await api.get_builtin_tools_info();  // 预加载内置工具信息
     setStatus("已加载", "ok");
   } catch (e) {
     setStatus(e.message || "加载失败", "err");
