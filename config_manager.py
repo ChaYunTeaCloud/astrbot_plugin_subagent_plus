@@ -130,12 +130,13 @@ _BUILTIN_TOOL_GROUPS: Dict[str, list[str]] = {
 
 # ==================== 默认配置 ====================
 CONFIG_FILENAME = "config.json"         # 配置文件名
+
 DEFAULT_CONFIG: Dict[str, Any] = {
     "max_call_subagent_depth": 3,       # SubAgent 最大嵌套调用深度
     "router_mode_enabled": False,       # 是否开启路由 SubAgent 模式
     "router_subagent_name": "",         # 路由 SubAgent 名称
-}
-
+    "subagent_settings": {},            # SubAgent 配置 (subagent_name : {"builtin_tools": [], "callable_subagents": []})
+   }
 
 class PluginConfigManager(dict):
     """插件配置管理器, 单例；继承 dict 以支持 [] 直接访问配置项"""
@@ -172,6 +173,12 @@ class PluginConfigManager(dict):
         """获取系统内置工具分组映射表"""
         return _BUILTIN_TOOL_GROUPS
 
+    def get_subagent_settings(self, name: str) -> dict:
+        """获取指定 SubAgent 的配置（不存在则返回空模板）"""
+        return self["subagent_settings"].get(name, {
+            "builtin_tools": [],
+            "callable_subagents": [],
+        })
 
     def _load(self) -> Dict[str, Any]:
         """读取配置文件；不存在或损坏则用默认配置"""
