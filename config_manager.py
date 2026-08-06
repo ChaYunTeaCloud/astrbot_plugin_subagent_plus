@@ -12,8 +12,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 }
 
 
-class PluginConfigManager:
-    """插件配置管理器, 单例。"""
+class PluginConfigManager(dict):
+    """插件配置管理器, 单例。继承 dict 以支持 [] 直接访问配置项。"""
 
     _instance = None     # 单例实例
 
@@ -25,30 +25,26 @@ class PluginConfigManager:
     def __init__(self, plugin_name: str = None) -> None:
         if hasattr(self, "_initialized"):
             return
+        super().__init__()
         self._initialized = True
         self._plugin_data_dir = StarTools.get_data_dir(plugin_name)
         self._config_path = self._plugin_data_dir / CONFIG_FILENAME
-        self._config: Dict[str, Any] = self._load()
+        self.update(self._load())
 
 
     @property
-    def config(self) -> Dict[str, Any]:
-        """获取完整配置字典。"""
-        return self._config
+    def config(self) -> "PluginConfigManager":
+        """获取完整配置字典（向后兼容）。"""
+        return self
 
     def set_config(self, config: Dict[str, Any]) -> bool:
         """合并配置字典并保存。"""
-        self._config.update(config)
+        self.update(config)
         return self._save()
-
-
-    def get(self, key: str, default: Any = None) -> Any:
-        """获取配置项。"""
-        return self._config.get(key, default)
 
     def set(self, key: str, value: Any = None) -> bool:
         """设置配置项并保存。"""
-        self._config[key] = value
+        self[key] = value
         return self._save()
 
 
@@ -67,7 +63,7 @@ class PluginConfigManager:
         """保存配置到文件。"""
         try:
             with open(self._config_path, "w", encoding="utf-8") as f:
-                json.dump(self._config, f, ensure_ascii=False, indent=2)
+                json.dump(self, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.error(f"保存配置失败: {e}")
             return False
