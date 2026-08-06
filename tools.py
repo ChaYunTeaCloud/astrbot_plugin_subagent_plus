@@ -200,81 +200,24 @@ class PluginToolManager:
         """
 
         async def _handler(event: AstrMessageEvent, agent_name: str, input: str = "") -> str:
-            """调用指定 SubAgent
-
+            """调用指定 SubAgent（同步模式）
             Args:
-                event: 消息事件
+                event: 事件对象，包含用户消息等信息
                 agent_name: 要调用的 SubAgent 名称
                 input: 传递给 SubAgent 的任务描述，为空时使用最近一条用户消息
+            Returns:
+                调用结果
             """
-            umo = event.unified_msg_origin          # 获取当前会话 umo
-            cfg = self._context.get_config(umo=umo) # 获取当前会话 AstrBotConfig
-
-            max_depth: int = self._pcfg_mgr["max_call_subagent_depth"]  # 最大递归调用深度
-            logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}，最大深度{max_depth}")
-            if max_depth != 0 and depth > max_depth:
-                return f"已达到最大嵌套深度{max_depth}，无法继续委派。"
-
-            # 从配置中查找 persona_id _cfg_mgr["subagent_orchestrator"]["agents"]，获取 agent_name 对应的配置项
-            agent_cfg: dict = next(
-                (item for item in cfg["subagent_orchestrator"]["agents"]
-                    if item["name"] == agent_name),
-                None
-            )
-            persona_id = agent_cfg["persona_id"] if agent_cfg else None
-            if not persona_id:
-                return f"Agent {agent_name} 不存在或未配置人格设定"
-
-            # 从 handoffs 中查找 Agent 实例，获取 agent_name 对应的实例项
-            handoff_tool = next(
-                (h for h in self._context.subagent_orchestrator.handoffs if h.agent.name == agent_name),
-                None
-            )
-            agent = handoff_tool.agent if handoff_tool else None
-            if not agent:
-                return f"Agent {agent_name} 不存在"
-
-            skill_prompt = ""   # skill 能力提示词
-            tool_set = ToolSet()  # SubAgent 工具集合
-
-            if persona_id != "default": # 非 default 人格才允许注入skill 能力和工具
-                skill_prompt = await self._build_subagent_skill_prompt_by_persona_id(persona_id, umo)
-                tool_set.merge(await self._build_subagent_tools_by_persona_id(persona_id, umo))
-
-            # 注入 call_subagent_tool 和 list_subagent_tool 给下层 SubAgent
-            next_depth = depth + 1
-            tool_set.add_tool(self._make_call_subagent_tool(next_depth))
-            tool_set.add_tool(self.get_list_subagent_tool())
-
-            # 获取 Provider ID（优先使用 handoff_tool 配置的专用 Provider）
-            prov_id = getattr(handoff_tool, "provider_id", None) or await self._context.get_current_chat_provider_id(umo)
-
-            # 获取系统提示词（人格设定 + skill 能力提示词）
-            system_prompt = (agent.instructions or "") + (f"\n\n{skill_prompt}" if skill_prompt else "")
-
-            # 获取 agent 配置
-            agent_max_step = int(cfg["provider_settings"]["max_agent_step"])
-            
-
-            # 获取 prompt
+            umo = event.unified_msg_origin
             prompt = input if input else event.message_str
 
-            # 调用 SubAgent
-            logger.info(f"call_subagent: 正在调用 Agent {agent_name},prov_id={prov_id}，工具数={len(tool_set)}")
-            logger.debug(f"call_subagent: 任务描述: {prompt}")
-            logger.debug(f"call_subagent: 系统提示词(长度): {len(system_prompt)}")
-            logger.debug(f"call_subagent: 可用工具列表: {[t.name for t in tool_set.tools]}")
-            
-            llm_resp = await self._context.tool_loop_agent(
+            return await self._call_subagent(
                 event=event,
-                chat_provider_id=prov_id,
+                agent_name=agent_name,
                 prompt=prompt,
-                system_prompt=system_prompt,
-                tools=tool_set,
-                max_steps=agent_max_step,
+                umo=umo,
+                depth=depth,
             )
-
-            return llm_resp.completion_text
 
         return FunctionTool(
             name="call_subagent",
@@ -295,6 +238,81 @@ class PluginToolManager:
             },
             handler=_handler,
         )
+
+
+    async def _call_subagent(
+        self,
+        event: AstrMessageEvent,
+        agent_name: str,
+        prompt: str,
+        umo: str,
+        depth: int,
+    ) -> str:
+        """调用 SubAgent 的核心逻辑（可被同步/后台模式复用）"""
+        cfg = self._context.get_config(umo=umo)
+
+        max_depth: int = self._pcfg_mgr["max_call_subagent_depth"]
+        logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}，最大深度{max_depth}")
+        if max_depth != 0 and depth > max_depth:
+            return f"已达到最大嵌套深度{max_depth}，无法继续委派。"
+
+        # 从配置中查找 persona_id
+        agent_cfg: dict = next(
+            (item for item in cfg["subagent_orchestrator"]["agents"]
+                if item["name"] == agent_name),
+            None
+        )
+        persona_id = agent_cfg["persona_id"] if agent_cfg else None
+        if not persona_id:
+            return f"Agent {agent_name} 不存在或未配置人格设定"
+
+        # 从 handoffs 中查找 Agent 实例
+        handoff_tool = next(
+            (h for h in self._context.subagent_orchestrator.handoffs if h.agent.name == agent_name),
+            None
+        )
+        agent = handoff_tool.agent if handoff_tool else None
+        if not agent:
+            return f"Agent {agent_name} 不存在"
+
+        # 构建工具集合
+        skill_prompt = ""
+        tool_set = ToolSet()
+
+        if persona_id != "default":
+            skill_prompt = await self._build_subagent_skill_prompt_by_persona_id(persona_id, umo)
+            tool_set.merge(await self._build_subagent_tools_by_persona_id(persona_id, umo))
+
+        next_depth = depth + 1
+        tool_set.add_tool(self._make_call_subagent_tool(next_depth))
+        tool_set.add_tool(self.get_list_subagent_tool())
+
+        # 获取 Provider ID
+        prov_id = getattr(handoff_tool, "provider_id", None) or await self._context.get_current_chat_provider_id(umo)
+
+        # 构建系统提示词
+        system_prompt = (agent.instructions or "") + (f"\n\n{skill_prompt}" if skill_prompt else "")
+
+        # 获取 max_steps
+        agent_max_step = int(cfg["provider_settings"]["max_agent_step"])
+
+        # 日志
+        logger.info(f"call_subagent: 正在调用 Agent {agent_name},prov_id={prov_id}，工具数={len(tool_set)}")
+        logger.debug(f"call_subagent: 任务描述: {prompt}")
+        logger.debug(f"call_subagent: 系统提示词(长度): {len(system_prompt)}")
+        logger.debug(f"call_subagent: 可用工具列表: {[t.name for t in tool_set.tools]}")
+
+        # 调用 SubAgent
+        llm_resp = await self._context.tool_loop_agent(
+            event=event,
+            chat_provider_id=prov_id,
+            prompt=prompt,
+            system_prompt=system_prompt,
+            tools=tool_set,
+            max_steps=agent_max_step,
+        )
+
+        return llm_resp.completion_text
 
 
     async def _build_subagent_tools_by_persona_id(self, persona_id: str, umo: str) -> ToolSet:
