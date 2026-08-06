@@ -132,7 +132,8 @@ _BUILTIN_TOOL_GROUPS: Dict[str, list[str]] = {
 CONFIG_FILENAME = "config.json"         # 配置文件名
 DEFAULT_CONFIG: Dict[str, Any] = {
     "max_call_subagent_depth": 3,       # SubAgent 最大嵌套调用深度
-    "router_subagent_name": "router",   # 路由 SubAgent 名称
+    "router_subagent_name": "",         # 路由 SubAgent 名称
+    "router_mode_enabled": False,       # 是否开启路由 SubAgent 模式
 }
 
 

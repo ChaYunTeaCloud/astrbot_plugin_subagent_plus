@@ -218,6 +218,22 @@ body {
   border-color: #165dff;
 }
 
+.field .chk-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: normal;
+  user-select: none;
+}
+
+.field .chk-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #165dff;
+  cursor: pointer;
+}
+
 .field .hint {
   margin: 0;
 }

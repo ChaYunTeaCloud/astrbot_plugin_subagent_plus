@@ -26,7 +26,8 @@ const subagentNames = await api.getSubagentNames();
 const tabs = {
   basic: () => card("基础配置", `
     ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。")}
-    ${select("router_subagent_name", "路由 SubAgent 名称", subagentNames, "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。")}
+    ${chk("router_mode_enabled", "开启路由 SubAgent 模式", "开启后，用户输入将先由路由 SubAgent 处理，由其决定直接返回 MainAgent 或交由下游 SubAgent 处理。")}
+    ${get("router_mode_enabled", false) ? select("router_subagent_name", "路由 SubAgent 名称", subagentNames, "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。") : ""}
   `),
   subAgentConfig: () => subagentNames.map(name =>
     collapseCard(name, `<p class="hint">（待填充）</p>`)
@@ -94,6 +95,17 @@ function select(path, label, options, hint = "") {
   return `<div class="field">
     <label>${label}</label>
     <select data-p="${path}">${opts}</select>
+    ${hint ? `<p class="hint">${hint}</p>` : ""}
+  </div>`;
+}
+
+function chk(path, label, hint = "") {
+  const checked = get(path, false) ? "checked" : "";
+  return `<div class="field">
+    <label class="chk-label">
+      <input type="checkbox" data-p="${path}" ${checked} />
+      ${label}
+    </label>
     ${hint ? `<p class="hint">${hint}</p>` : ""}
   </div>`;
 }
