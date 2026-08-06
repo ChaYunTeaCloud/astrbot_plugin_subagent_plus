@@ -133,7 +133,7 @@ class PluginToolManager:
         self._tool_set = ToolSet()
         """用于缓存所有自定义工具"""
         self._context = context
-        """上下文实例"""
+        """AstrBot接口上下文实例"""
         self._pcfg_mgr = pcfg_mgr
         """插件配置管理器实例"""
 
