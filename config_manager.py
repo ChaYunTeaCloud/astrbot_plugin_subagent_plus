@@ -48,7 +48,7 @@ _BUILTIN_TOOL_GROUPS: Dict[str, list[str]] = {
     "local_only": [
         # ▼ _get_runtime_computer_tools 注入（local 专用）
         "astrbot_execute_python",     # 本地 Python 执行（非沙箱）
-        "astrbot_shell_session",      # 管理 Shell 会话（列表/写入/中断/终止）
+        "astrbot_shell_session",      # 管理 Shell 会话（列表/写入/中断/终止）（官方于 2026-8 新增）
     ],
 
     # ═══════════════════════════════════════════════════════════════
@@ -121,7 +121,7 @@ _BUILTIN_TOOL_GROUPS: Dict[str, list[str]] = {
     # ═══════════════════════════════════════════════════════════════
     "system": [
         "send_message_to_user",        # 主动发送消息/媒体给用户
-        "get_group_message_history",   # 读取群聊历史消息（需开启 group_message_history_enable）
+        "get_group_message_history",   # 读取群聊历史消息（需开启 group_message_history_enable）（官方于 2026-8 新增）
         "future_task",                 # 管理定时/一次性任务（cron/run_at）
         "astr_kb_search",              # 知识库查询
     ],
