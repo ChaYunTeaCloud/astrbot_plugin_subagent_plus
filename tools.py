@@ -14,7 +14,7 @@ class PluginToolManager:
         self._tool_set = ToolSet()
         """用于缓存所有自定义工具"""
 
-        # 从配置文件加载内置工具分组，缺失时使用默认值
+        # 从配置文件加载内置工具映射表
         self._builtin_tool_groups: dict[str, list[str]] = pcfg_mgr["builtin_tool_groups"]
 
 
