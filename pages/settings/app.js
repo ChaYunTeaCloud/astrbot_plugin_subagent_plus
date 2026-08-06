@@ -31,7 +31,10 @@ const tabs = {
   subAgentConfig: () => card("SubAgent 配置", `
     <p class="hint">这里将展示 SubAgent 相关配置项（待填充）。</p>
   `),
-  test: () => card("测试", JSON.stringify(builtinToolsInfo, null, 2)),
+  test: () => card("测试", `
+    ${card("内置工具信息", JSON.stringify(builtinToolsInfo, null, 2))}
+    ${card("SubAgent 配置", JSON.stringify(config, null, 2))}
+  `),
 };
 
 els.body.addEventListener("input", (e) => {
