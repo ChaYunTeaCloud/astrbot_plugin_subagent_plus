@@ -16,6 +16,7 @@ const api = {
   post: (cfg) => bridge.apiPost("config", cfg),
   get_by_path: (path) => bridge.apiGet(`config/${path}`),
   set_by_path: (path, val) => bridge.apiPost(`config/${path}`, { value: val }),
+  get_builtin_tools_info: () => bridge.apiGet("builtin_tools"),
 };
 
 const tabs = {
@@ -29,6 +30,7 @@ const tabs = {
   subAgentConfig: () => card("SubAgent 配置", `
     <p class="hint">这里将展示 SubAgent 相关配置项（待填充）。</p>
   `),
+  test: async () => card("测试", JSON.stringify(await api.get_builtin_tools_info(), null, 2)),
 };
 
 els.body.addEventListener("input", (e) => {
@@ -136,10 +138,10 @@ function bindAll() {
 }
 
 // 显示 Tab 内容
-function show(name) {
+async function show(name) {
   document.querySelectorAll("#tabs .tab").forEach((t) => t.classList.remove("on"));
   document.querySelector(`#tabs .tab[data-t="${name}"]`)?.classList.add("on");
-  els.body.innerHTML = (tabs[name] || tabs.basic)();
+  els.body.innerHTML = await (tabs[name] || tabs.basic)();
   bindAll();
 }
 
