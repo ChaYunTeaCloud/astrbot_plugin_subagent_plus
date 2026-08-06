@@ -210,7 +210,7 @@ class PluginToolManager:
             umo = event.unified_msg_origin          # 获取当前会话 umo
             cfg = self._context.get_config(umo=umo) # 获取当前会话 AstrBotConfig
 
-            max_depth: int = self._pcfg_mgr.get("max_call_subagent_depth")  # 最大递归调用深度
+            max_depth: int = self._pcfg_mgr["max_call_subagent_depth"]  # 最大递归调用深度
             logger.debug(f"call_subagent: 委派给 Agent {agent_name}，当前深度{depth}，最大深度{max_depth}")
             if max_depth != 0 and depth > max_depth:
                 return f"已达到最大嵌套深度{max_depth}，无法继续委派。"
