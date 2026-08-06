@@ -12,8 +12,10 @@ const api = {
   get: (endpoint) => bridge.apiGet(endpoint),
   getConfig: () => bridge.apiGet("config"),
   postConfig: (cfg) => bridge.apiPost("config", cfg),
+
   getConfigByPath: (path) => bridge.apiGet(`config/${path}`),
   setConfigByPath: (path, val) => bridge.apiPost(`config/${path}`, { value: val }),
+
   getBuiltinToolsInfo: () => api.get("builtin_tools"),
   getSubagentNames: () => api.get("subagent_names"),
 };
@@ -21,7 +23,7 @@ const api = {
 const config = {};       // 当前配置（实时同步表单）
 const savedConfig = {};  // 已保存的配置快照（用于比较是否修改）
 const builtinToolsInfo = await api.getBuiltinToolsInfo();
-const subagentNames = await api.getSubagentNames();
+const subAgentNames = await api.getSubagentNames();
 
 const tabs = {
   basic: () => {
@@ -35,7 +37,7 @@ const tabs = {
         select(
             "router_subagent_name",
             "路由 SubAgent 名称",
-            subagentNames,
+            subAgentNames,
             "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。",
           ),
           get("router_mode_enabled")
@@ -43,14 +45,14 @@ const tabs = {
     return card(card_title, card_body);
   },
 
-  subAgentConfig: () => subagentNames.map(name =>
+  subAgentConfig: () => subAgentNames.map(name =>
     collapseCard(name, `<p class="hint">（待填充）</p>`)
   ).join(""),
 
   test: () => card("测试", `
     ${collapseCard("内置工具信息", JSON.stringify(builtinToolsInfo, null, 2))}
     ${collapseCard("SubAgent 配置", JSON.stringify(config, null, 2))}
-    ${collapseCard("已注册 SubAgent 名称", JSON.stringify(subagentNames, null, 2))}
+    ${collapseCard("已注册 SubAgent 名称", JSON.stringify(subAgentNames, null, 2))}
   `),
 };
 

@@ -136,6 +136,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "router_mode_enabled": False,       # 是否开启路由 SubAgent 模式
     "router_subagent_name": "",         # 路由 SubAgent 名称
     "subagent_settings": {},            # SubAgent 配置 (subagent_name : {"builtin_tools": [], "callable_subagents": []})
+    "subagent_default_setting": {       # 默认 SubAgent 配置项，仅作为空模板存在
+        "builtin_tools": [],
+        "callable_subagents": [],
+    },
    }
 
 class PluginConfigManager(dict):
@@ -175,10 +179,7 @@ class PluginConfigManager(dict):
 
     def get_subagent_settings(self, name: str) -> dict:
         """获取指定 SubAgent 的配置（不存在则返回空模板）"""
-        return self["subagent_settings"].get(name, {
-            "builtin_tools": [],
-            "callable_subagents": [],
-        })
+        return self["subagent_settings"].get(name, self["subagent_default_setting"])
 
     def _load(self) -> Dict[str, Any]:
         """读取配置文件；不存在或损坏则用默认配置"""
