@@ -24,14 +24,28 @@ const builtinToolsInfo = await api.getBuiltinToolsInfo();
 const subagentNames = await api.getSubagentNames();
 
 const tabs = {
-  basic: () => card("基础配置", `
-    ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。")}
-    ${chk("router_mode_enabled", "开启路由 SubAgent 模式", "开启后，用户输入将先由路由 SubAgent 处理，由其决定直接返回 MainAgent 或交由下游 SubAgent 处理。")}
-    ${get("router_mode_enabled", false) ? select("router_subagent_name", "路由 SubAgent 名称", subagentNames, "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。") : ""}
-  `),
+  basic: () => {
+    var card_title = `基础配置`;
+    var card_body = `
+      ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。")}
+      ${chk("router_mode_enabled", "开启路由 SubAgent 模式", "开启后，用户输入将先由路由 SubAgent 处理，由其决定直接返回 MainAgent 或交由下游 SubAgent 处理。")}
+      `;
+    card_body += `
+    ${card("路由 SubAgent 配置",
+      select(
+          "router_subagent_name",
+          "路由 SubAgent 名称",
+          subagentNames,
+          "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。",
+        ), get("router_mode_enabled", false)
+      )}`
+    return card(card_title, card_body);
+  },
+  
   subAgentConfig: () => subagentNames.map(name =>
     collapseCard(name, `<p class="hint">（待填充）</p>`)
   ).join(""),
+  
   test: () => card("测试", `
     ${collapseCard("内置工具信息", JSON.stringify(builtinToolsInfo, null, 2))}
     ${collapseCard("SubAgent 配置", JSON.stringify(config, null, 2))}
@@ -42,6 +56,9 @@ const tabs = {
 els.body.addEventListener("input", (e) => {
   if (e.target.dataset?.p === "max_call_subagent_depth") {
     e.target.value = e.target.value.replace(/^0+(?=\d)|-/g, ""); // 移除前导零和负号
+  }
+  if (e.target.dataset?.p === "router_mode_enabled") {
+    show("basic");
   }
 });
 els.body.addEventListener("keydown", (e) => {
@@ -55,9 +72,9 @@ els.body.addEventListener("keydown", (e) => {
 
 
 // ==================== UI 组件 ====================
-function card(title, content, attr = {}, show = true) {
+function card(title, content, show = true) {
   if (show === false) return "";
-  return `<div class="card ${attr.class || ""}">  
+  return `<div class="card">  
     <h3>${title}</h3>
     ${content}
   </div>`;
@@ -73,18 +90,18 @@ function collapseCard(title, content, expanded = false) {
   </div>`;
 }
 
-function num(path, label, hint, attr = {}) {
+function num(path, label, hint) {
   return `<div class="field">
     <label>${label}</label>
-    <input type="number" data-p="${path}" value="${get(path, 0)}" ${attr} />
+    <input type="number" data-p="${path}" value="${get(path, 0)}"/>
     ${hint ? `<p class="hint">${hint}</p>` : ""}
   </div>`;
 }
 
-function txt(path, label, hint, attr = {}) {
+function txt(path, label, hint) {
   return `<div class="field">
     <label>${label}</label>
-    <input type="text" data-p="${path}" value="${get(path, "")}" ${attr} />
+    <input type="text" data-p="${path}" value="${get(path, "")}"/>
     ${hint ? `<p class="hint">${hint}</p>` : ""}
   </div>`;
 }
