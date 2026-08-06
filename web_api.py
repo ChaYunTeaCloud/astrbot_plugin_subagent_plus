@@ -31,6 +31,12 @@ def register_page_apis(context: Context, pcfg_mgr: PluginConfigManager, plugin_n
         ["POST"],
         "设置单个配置项",
     )
+    context.register_web_api(
+        f"/{plugin_name}/builtin_tools",
+        lambda: _get_builtin_tools_info(context, pcfg_mgr),
+        ["GET"],
+        "获取内置工具分组信息",
+    )
 
 
 async def _get_config(cfg_mgr: PluginConfigManager):
@@ -87,3 +93,37 @@ async def _set_single_config(cfg_mgr: PluginConfigManager, key: str):
     except Exception as e:
         logger.error(f"设置配置项失败: {e}")
         return error_response(str(e), status_code=500)
+
+
+async def _get_builtin_tools_info(context: Context, cfg_mgr: PluginConfigManager) -> dict:
+    """获取内置工具分组信息，包括描述和未映射工具
+    Returns:
+        dict: {
+            "groups": { group_name: { tool_name: description, ... }, ... },
+            "unmapped_tools": { tool_name: description, ... },  # 框架注册了但映射表里没有
+        }
+    """
+    tool_mgr = context.get_llm_tool_manager()   # 获取 LLM 工具管理器
+    builtin_tool_groups = cfg_mgr.builtin_tool_groups   # 获取内置工具分组配置 {group_name: [tool_name, ...], ...}
+
+    # 已映射的工具名集合
+    mapped_names: set[str] = {name for names in builtin_tool_groups.values() for name in names}
+
+    # 一次遍历：构建 name→description 映射，同时收集未映射工具
+    all_registered: dict[str, str] = {}
+    unmapped_tools: dict[str, str] = {}
+    for tool in tool_mgr.iter_builtin_tools():  # 遍历所有框架已注册的内置工具
+        all_registered[tool.name] = tool.description     # 收集所有已注册工具的描述
+        if tool.name not in mapped_names:
+            unmapped_tools[tool.name] = tool.description # 收集未映射的工具及其描述
+
+    # 按分组组织
+    groups: dict[str, dict[str, str]] = {
+        group_name: {name: all_registered.get(name, "") for name in tool_names} # 每个分组的工具描述映射
+        for group_name, tool_names in builtin_tool_groups.items()   # 遍历每个分组
+    }
+
+    return {
+        "groups": groups,
+        "unmapped_tools": unmapped_tools,
+    }
