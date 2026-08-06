@@ -41,11 +41,11 @@ const tabs = {
       )}`
     return card(card_title, card_body);
   },
-  
+
   subAgentConfig: () => subagentNames.map(name =>
     collapseCard(name, `<p class="hint">（待填充）</p>`)
   ).join(""),
-  
+
   test: () => card("测试", `
     ${collapseCard("内置工具信息", JSON.stringify(builtinToolsInfo, null, 2))}
     ${collapseCard("SubAgent 配置", JSON.stringify(config, null, 2))}
