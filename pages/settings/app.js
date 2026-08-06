@@ -25,10 +25,7 @@ const subagentNames = await api.getSubagentNames();
 
 const tabs = {
   basic: () => card("基础配置", `
-    ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。"
-      // ,'oninput="value=value.replace(/^0+(?=\d)|-/g, \'\')"'   // 移除前导零和负号
-      // +'onkeydown="if (event.key.length === 1 && !/[0-9]/.test(event.key)) event.preventDefault()"' // 阻止非数字输入
-    )}
+    ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。")}
     ${txt("router_subagent_name", "路由 SubAgent 名称", "用于路由 SubAgent 的名称，默认值为 router。")}
   `),
   subAgentConfig: () => card("SubAgent 配置", `
