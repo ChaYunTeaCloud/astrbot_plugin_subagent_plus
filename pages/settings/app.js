@@ -46,20 +46,18 @@ const tabs = {
   },
 
   subAgentConfig: () => subAgentNames.map(name =>{
-    // 获取 SubAgent 配置, 如果不存在则使用默认配置
-    var setting = config["subagent_settings"][name] || config["subagent_default_setting"];
+    var base = `subagent_settings.${name}`;
 
-    var builtin_tools = setting["builtin_tools"]
-    var callable_subagents = setting["callable_subagents"]
-
-    var tool_card_body = JSON.stringify(builtin_tools, null, 2)
-    var callable_subagent_card_body = JSON.stringify(callable_subagents, null, 2)
+    // 可调 SubAgent 选项：排除自己，排除路由层（如果启用）
+    var router_name = get("router_mode_enabled", false) ? get("router_subagent_name", "") : "";
+    var callable_options = subAgentNames.filter(n => n !== name && n !== router_name)
+      .map(n => ({ value: n, label: n }));
 
     var collapseCardBody = `
-      ${card("内置工具", tool_card_body)}
-      ${card("可调 SubAgent", callable_subagent_card_body)}
-    `
-    return collapseCard(name, collapseCardBody)
+    ${collapseCard("可调 SubAgent", chklist(`${base}.callable_subagents`, callable_options, "", "全选"))}
+      ${collapseCard("内置工具", chklist_groups(`${base}.builtin_tools`, builtinToolsInfo.groups || {}))}
+    `;
+    return collapseCard(name, collapseCardBody);
   }).join(""),
 
   test: () => card("测试", `
@@ -77,7 +75,63 @@ els.body.addEventListener("input", (e) => {
   if (e.target.dataset?.p === "router_mode_enabled") {
     show("basic");
   }
+
+  // 多选列表：单个选项变化 -> 更新 path 数组
+  if (e.target.dataset?.list) {
+    const path = e.target.dataset.list;
+    const values = [...els.body.querySelectorAll(`input[data-list="${path}"]:checked`)].map(el => el.value);
+    set(path, values);
+    // 同步对应全选框状态
+    _syncSelectAll(path);
+    refreshStatus();
+  }
+
+  // 多选列表：全选按钮
+  if (e.target.dataset?.selectall) {
+    const path = e.target.dataset.selectall;
+    const all = els.body.querySelectorAll(`input[data-list="${path}"]`);
+    all.forEach(el => el.checked = e.target.checked);
+    const values = [...all].filter(el => el.checked).map(el => el.value);
+    set(path, values);
+    refreshStatus();
+  }
+
+  // 分组多选列表：分组全选
+  if (e.target.dataset?.selectallGroup) {
+    const path = e.target.dataset.selectallGroup;
+    const gname = e.target.dataset.group;
+    const group = e.target.closest(".chklist-group");
+    const items = group.querySelectorAll(`input[data-list="${path}"]`);
+    items.forEach(el => el.checked = e.target.checked);
+    // 同步整个 path 的值
+    const values = [...els.body.querySelectorAll(`input[data-list="${path}"]:checked`)].map(el => el.value);
+    set(path, values);
+    _syncSelectAll(path);
+    refreshStatus();
+  }
 });
+
+// 同步指定 path 的所有全选框状态（普通全选+分组全选）
+function _syncSelectAll(path) {
+  const items = [...els.body.querySelectorAll(`input[data-list="${path}"]`)];
+  const total = items.length;
+  const checked = items.filter(el => el.checked).length;
+  // 普通全选
+  const sa = els.body.querySelector(`input[data-selectall="${path}"]`);
+  if (sa) {
+    sa.checked = total > 0 && checked === total;
+    sa.indeterminate = checked > 0 && checked < total;
+  }
+  // 分组全选
+  els.body.querySelectorAll(`input[data-selectall-group="${path}"]`).forEach(g => {
+    const group = g.closest(".chklist-group");
+    const gItems = [...group.querySelectorAll(`input[data-list="${path}"]`)];
+    const gTotal = gItems.length;
+    const gChecked = gItems.filter(el => el.checked).length;
+    g.checked = gTotal > 0 && gChecked === gTotal;
+    g.indeterminate = gChecked > 0 && gChecked < gTotal;
+  });
+}
 els.body.addEventListener("keydown", (e) => {
   if (e.target.dataset?.p === "max_call_subagent_depth") {
     if (e.key.length === 1 && !/[0-9]/.test(e.key)) {
@@ -142,6 +196,77 @@ function chk(path, label, hint = "") {
     </label>
     ${hint ? `<p class="hint">${hint}</p>` : ""}
   </div>`;
+}
+
+/**
+ * 多选列表组件（返回 checkbox 列表，值写入 path 对应的数组）
+ * @param {string} path - 写入 config 的路径（值为字符串数组）
+ * @param {Array<{value:string, label:string}>} items - 选项
+ * @param {string} [hint] - 提示文字
+ * @param {string} [selectAllLabel] - 全选按钮文字（不写则不显示全选）
+ */
+function chklist(path, items, hint = "", selectAllLabel = "") {
+  const cur = new Set(get(path, []));
+  const listId = path.replace(/\./g, "-");
+  const allChecked = items.every(it => cur.has(it.value));
+  const itemsHtml = items.map(it => `
+    <label class="chklist-item">
+      <input type="checkbox" value="${it.value}" data-list="${path}" ${cur.has(it.value) ? "checked" : ""} />
+      <div class="chklist-item-content">
+        <div class="chklist-item-title">${it.label}</div>
+      </div>
+    </label>
+  `).join("");
+  const selectAllHtml = selectAllLabel ? `
+    <label class="chklist-item select-all">
+      <input type="checkbox" data-selectall="${path}" ${allChecked ? "checked" : ""} />
+      <div class="chklist-item-content">
+        <div class="chklist-item-title">${selectAllLabel}</div>
+      </div>
+    </label>
+    <div class="chklist-sep"></div>
+  ` : "";
+  return `<div class="field">
+    <div class="chklist" id="chklist-${listId}">
+      ${selectAllHtml}
+      ${itemsHtml}
+    </div>
+    ${hint ? `<p class="hint">${hint}</p>` : ""}
+  </div>`;
+}
+
+/**
+ * 分组多选列表（内置工具按分组展示，每组带全选）
+ * @param {string} path - 写入 config 的路径（值为字符串数组，跨组合并）
+ * @param {Object<string, Object<string, string>>} groups - { 组名: { 工具名: 描述, ... }, ... }
+ */
+function chklist_groups(path, groups) {
+  const cur = new Set(get(path, []));
+  return Object.entries(groups || {}).map(([gname, tools]) => {
+    const toolEntries = Object.entries(tools || {});
+    const allChecked = toolEntries.every(([t]) => cur.has(t));
+    const anyChecked = toolEntries.some(([t]) => cur.has(t));
+    const itemsHtml = toolEntries.map(([t, desc]) => `
+      <label class="chklist-item">
+        <input type="checkbox" value="${t}" data-list="${path}" ${cur.has(t) ? "checked" : ""} />
+        <div class="chklist-item-content">
+          <div class="chklist-item-title">${t}</div>
+          ${desc ? `<div class="chklist-item-desc">${desc}</div>` : ""}
+        </div>
+      </label>
+    `).join("");
+    return `<div class="chklist-group">
+      <div class="chklist-group-hd">
+        <label class="chklist-item select-all">
+          <input type="checkbox" data-selectall-group="${path}" data-group="${gname}" ${allChecked ? "checked" : ""} ${anyChecked && !allChecked ? 'data-indeterminate="true"' : ""} />
+          <div class="chklist-item-content">
+            <div class="chklist-item-title">${gname}</div>
+          </div>
+        </label>
+      </div>
+      <div class="chklist-group-bd">${itemsHtml}</div>
+    </div>`;
+  }).join("");
 }
 // ==================== UI 组件 ====================
 
