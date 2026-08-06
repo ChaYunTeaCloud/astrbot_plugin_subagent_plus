@@ -31,15 +31,15 @@ const tabs = {
       ${chk("router_mode_enabled", "开启路由 SubAgent 模式", "开启后，用户输入将先由路由 SubAgent 处理，由其决定直接返回 MainAgent 或交由下游 SubAgent 处理。")}
       `;
     card_body += `
-    ${card("路由 SubAgent 配置",
-      select(
-          "router_subagent_name",
-          "路由 SubAgent 名称",
-          subagentNames,
-          "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。",
-        ),
-        get("router_mode_enabled")
-      )}`
+      ${card("路由 SubAgent 配置",
+        select(
+            "router_subagent_name",
+            "路由 SubAgent 名称",
+            subagentNames,
+            "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。",
+          ),
+          get("router_mode_enabled")
+        )}`
     return card(card_title, card_body);
   },
 
