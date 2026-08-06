@@ -15,7 +15,7 @@ class PluginToolManager:
         """用于缓存所有自定义工具"""
 
         # 从配置文件加载内置工具映射表
-        self._builtin_tool_groups: dict[str, list[str]] = pcfg_mgr["builtin_tool_groups"]
+        self._builtin_tool_groups: dict[str, list[str]] = pcfg_mgr.builtin_tool_groups
 
 
     def get_list_subagent_tool(self) -> FunctionTool:
