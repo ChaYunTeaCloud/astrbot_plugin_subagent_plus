@@ -26,7 +26,7 @@ const subagentNames = await api.getSubagentNames();
 const tabs = {
   basic: () => card("基础配置", `
     ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。")}
-    ${txt("router_subagent_name", "路由 SubAgent 名称", "用于路由 SubAgent 的名称，默认值为 router。")}
+    ${select("router_subagent_name", "路由 SubAgent 名称", subagentNames, "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。")}
   `),
   subAgentConfig: () => card("SubAgent 配置", `
     <p class="hint">这里将展示 SubAgent 相关配置项（待填充）。</p>
@@ -74,6 +74,16 @@ function txt(path, label, hint, attr = {}) {
   return `<div class="field">
     <label>${label}</label>
     <input type="text" data-p="${path}" value="${get(path, "")}" ${attr} />
+    ${hint ? `<p class="hint">${hint}</p>` : ""}
+  </div>`;
+}
+
+function select(path, label, options, hint = "") {
+  const cur = get(path, "");
+  const opts = options.map(o => `<option value="${o}" ${o === cur ? "selected" : ""}>${o}</option>`).join("");
+  return `<div class="field">
+    <label>${label}</label>
+    <select data-p="${path}">${opts}</select>
     ${hint ? `<p class="hint">${hint}</p>` : ""}
   </div>`;
 }
