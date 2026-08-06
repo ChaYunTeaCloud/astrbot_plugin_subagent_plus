@@ -216,12 +216,12 @@ class PluginToolManager:
                 return f"已达到最大嵌套深度{max_depth}，无法继续委派。"
 
             # 从配置中查找 persona_id _cfg_mgr["subagent_orchestrator"]["agents"]，获取 agent_name 对应的配置项
-            agent_cfg = next(
+            agent_cfg: dict = next(
                 (item for item in cfg["subagent_orchestrator"]["agents"]
-                    if item.get("name") == agent_name),
+                    if item["name"] == agent_name),
                 None
             )
-            persona_id = agent_cfg.get("persona_id") if agent_cfg else None
+            persona_id = agent_cfg["persona_id"] if agent_cfg else None
             if not persona_id:
                 return f"Agent {agent_name} 不存在或未配置人格设定"
 
