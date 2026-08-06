@@ -9,16 +9,19 @@ const els = {
 };
 
 const api = {
-  get: () => bridge.apiGet("config"),
-  post: (cfg) => bridge.apiPost("config", cfg),
-  get_by_path: (path) => bridge.apiGet(`config/${path}`),
-  set_by_path: (path, val) => bridge.apiPost(`config/${path}`, { value: val }),
-  get_builtin_tools_info: () => bridge.apiGet("builtin_tools"),
+  get: (endpoint) => bridge.apiGet(endpoint),
+  getConfig: () => bridge.apiGet("config"),
+  postConfig: (cfg) => bridge.apiPost("config", cfg),
+  getConfigByPath: (path) => bridge.apiGet(`config/${path}`),
+  setConfigByPath: (path, val) => bridge.apiPost(`config/${path}`, { value: val }),
+  getBuiltinToolsInfo: () => api.get("builtin_tools"),
+  getSubagentNames: () => api.get("subagent_names"),
 };
 
 const config = {};       // 当前配置（实时同步表单）
 const savedConfig = {};  // 已保存的配置快照（用于比较是否修改）
-const builtinToolsInfo = await api.get_builtin_tools_info();
+const builtinToolsInfo = await api.getBuiltinToolsInfo();
+const subagentNames = await api.getSubagentNames();
 
 const tabs = {
   basic: () => card("基础配置", `
@@ -34,6 +37,7 @@ const tabs = {
   test: () => card("测试", `
     ${card("内置工具信息", JSON.stringify(builtinToolsInfo, null, 2))}
     ${card("SubAgent 配置", JSON.stringify(config, null, 2))}
+    ${card("已注册 SubAgent 名称", JSON.stringify(subagentNames, null, 2))}
   `),
 };
 
@@ -158,7 +162,7 @@ document.getElementById("tabs").addEventListener("click", (e) => {
 // 绑定保存按钮点击事件
 els.btnSave.addEventListener("click", async () => {
   try {
-    const result = await api.post(config);
+    const result = await api.postConfig(config);
     if (result.success) {
       Object.assign(savedConfig, JSON.parse(JSON.stringify(config)));  // 深拷贝快照
       setStatus("保存成功", "ok");
@@ -175,7 +179,7 @@ els.btnSave.addEventListener("click", async () => {
 (async () => {
   await bridge.ready();
   try {
-    Object.assign(config, await api.get()); // 加载当前配置到 config
+    Object.assign(config, await api.getConfig()); // 加载当前配置到 config
     Object.assign(savedConfig, JSON.parse(JSON.stringify(config)));  // 深拷贝初始快照
     setStatus("已加载", "ok");
   } catch (e) {

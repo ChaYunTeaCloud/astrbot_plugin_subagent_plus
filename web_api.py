@@ -37,6 +37,12 @@ def register_page_apis(context: Context, pcfg_mgr: PluginConfigManager, plugin_n
         ["GET"],
         "获取内置工具分组信息",
     )
+    context.register_web_api(
+        f"/{plugin_name}/subagent_names",
+        lambda: _get_subagents(context),
+        ["GET"],
+        "获取已注册的 SubAgent 名称列表",
+    )
 
 
 async def _get_config(cfg_mgr: PluginConfigManager):
@@ -127,3 +133,10 @@ async def _get_builtin_tools_info(context: Context, cfg_mgr: PluginConfigManager
         "groups": groups,
         "unmapped_tools": unmapped_tools,
     }
+
+
+async def _get_subagents(context: Context) -> list[str]:
+    """获取已启用的 SubAgent 名称列表"""
+    cfg = context.get_config()
+    agents = cfg.get("subagent_orchestrator", {}).get("agents", [])
+    return json_response([a["name"] for a in agents if a.get("enabled")])
