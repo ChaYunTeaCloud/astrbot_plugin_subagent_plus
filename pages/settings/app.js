@@ -28,13 +28,13 @@ const tabs = {
     ${num("max_call_subagent_depth", "最大嵌套调用深度", "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。")}
     ${select("router_subagent_name", "路由 SubAgent 名称", subagentNames, "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。")}
   `),
-  subAgentConfig: () => card("SubAgent 配置", `
-    <p class="hint">这里将展示 SubAgent 相关配置项（待填充）。</p>
-  `),
+  subAgentConfig: () => subagentNames.map(name =>
+    collapseCard(name, `<p class="hint">（待填充）</p>`)
+  ).join(""),
   test: () => card("测试", `
-    ${card("内置工具信息", JSON.stringify(builtinToolsInfo, null, 2))}
-    ${card("SubAgent 配置", JSON.stringify(config, null, 2))}
-    ${card("已注册 SubAgent 名称", JSON.stringify(subagentNames, null, 2))}
+    ${collapseCard("内置工具信息", JSON.stringify(builtinToolsInfo, null, 2))}
+    ${collapseCard("SubAgent 配置", JSON.stringify(config, null, 2))}
+    ${collapseCard("已注册 SubAgent 名称", JSON.stringify(subagentNames, null, 2))}
   `),
 };
 
@@ -59,6 +59,16 @@ function card(title, content, attr = {}, show = true) {
   return `<div class="card ${attr.class || ""}">  
     <h3>${title}</h3>
     ${content}
+  </div>`;
+}
+
+function collapseCard(title, content, expanded = false) {
+  return `<div class="card collapse-card${expanded ? "" : " collapsed"}">
+    <div class="collapse-header">
+      <h3>${title}</h3>
+      <span class="collapse-arrow">▾</span>
+    </div>
+    <div class="collapse-body">${content}</div>
   </div>`;
 }
 
@@ -164,6 +174,12 @@ function show(name) {
 document.getElementById("tabs").addEventListener("click", (e) => {
   const tab = e.target.closest(".tab");
   if (tab) show(tab.dataset.t);
+});
+
+// 绑定折叠卡片点击事件
+els.body.addEventListener("click", (e) => {
+  const header = e.target.closest(".collapse-header");
+  if (header) header.parentElement.classList.toggle("collapsed");
 });
 
 // 绑定保存按钮点击事件

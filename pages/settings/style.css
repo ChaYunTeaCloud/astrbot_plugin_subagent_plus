@@ -250,3 +250,40 @@ body {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ─── 折叠卡片 ──────────────────────────── */
+.collapse-card {
+  padding: 0;
+}
+
+.collapse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapse-header h3 {
+  margin: 0;
+}
+
+.collapse-arrow {
+  font-size: 14px;
+  color: #86909c;
+  transition: transform 0.2s;
+}
+
+.collapse-card.collapsed .collapse-arrow {
+  transform: rotate(-90deg);
+}
+
+.collapse-body {
+  padding: 0 20px 16px 20px;
+  border-top: 1px solid #e5e6eb;
+}
+
+.collapse-card.collapsed .collapse-body {
+  display: none;
+}
