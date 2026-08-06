@@ -199,22 +199,19 @@ class PluginToolManager:
             depth: 递归调用深度，首次调用时为 1, 后续调用时递增。
         """
 
-        async def _handler(event: AstrMessageEvent, agent_name: str, input: str = "") -> str:
+        async def _handler(event: AstrMessageEvent, agent_name: str, input: str) -> str:
             """调用指定 SubAgent（同步模式）
             Args:
-                event: 事件对象，包含用户消息等信息
+                event: 事件对象
                 agent_name: 要调用的 SubAgent 名称
-                input: 传递给 SubAgent 的任务描述，为空时使用最近一条用户消息
-            Returns:
-                调用结果
+                input: 传递给 SubAgent 的任务描述
             """
             umo = event.unified_msg_origin
-            prompt = input if input else event.message_str
 
             return await self._call_subagent(
                 event=event,
                 agent_name=agent_name,
-                prompt=prompt,
+                prompt=input,
                 umo=umo,
                 depth=depth,
             )
@@ -231,10 +228,10 @@ class PluginToolManager:
                     },
                     "input": {
                         "type": "string",
-                        "description": "传递给 SubAgent 的任务描述，为空时使用最近一条用户消息",
+                        "description": "传递给 SubAgent 的任务描述",
                     },
                 },
-                "required": ["agent_name"],
+                "required": ["agent_name", "input"],
             },
             handler=_handler,
         )
@@ -248,7 +245,14 @@ class PluginToolManager:
         umo: str,
         depth: int,
     ) -> str:
-        """调用 SubAgent 的核心逻辑（可被同步/后台模式复用）"""
+        """调用 SubAgent 的核心逻辑（可被同步/后台模式复用）
+        Args:
+            event: 事件对象，包含用户消息等信息
+            agent_name: 要调用的 SubAgent 名称
+            prompt: 传递给 SubAgent 的任务描述
+            umo: 统一消息来源
+            depth: 递归调用深度
+        """
         cfg = self._context.get_config(umo=umo)
 
         max_depth: int = self._pcfg_mgr["max_call_subagent_depth"]
