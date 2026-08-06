@@ -16,14 +16,14 @@ const api = {
   getConfigByPath: (path) => bridge.apiGet(`config/${path}`),
   setConfigByPath: (path, val) => bridge.apiPost(`config/${path}`, { value: val }),
 
-  getBuiltinToolsInfo: () => api.get("builtin_tools"),
-  getSubagentNames: () => api.get("subagent_names"),
+  getBuiltinToolsInfo: () => api.get("builtin_tools"),  // dict[group_name, dict[tool_name, tool_info]]
+  getSubagentNames: () => api.get("subagent_names"),  // list[subagent_name]
 };
 
 const config = {};       // 当前配置（实时同步表单）
 const savedConfig = {};  // 已保存的配置快照（用于比较是否修改）
-const builtinToolsInfo = await api.getBuiltinToolsInfo();
-const subAgentNames = await api.getSubagentNames();
+const builtinToolsInfo = await api.getBuiltinToolsInfo(); // 系统内置工具集映射表
+const subAgentNames = await api.getSubagentNames(); // 已注册 SubAgent 名称列表
 
 const tabs = {
   basic: () => {
@@ -45,14 +45,28 @@ const tabs = {
     return card(card_title, card_body);
   },
 
-  subAgentConfig: () => subAgentNames.map(name =>
-    collapseCard(name, `<p class="hint">（待填充）</p>`)
-  ).join(""),
+  subAgentConfig: () => subAgentNames.map(name =>{
+    // 获取 SubAgent 配置, 如果不存在则使用默认配置
+    var setting = config["subagent_settings"][name] || config["subagent_default_setting"];
+
+    var builtin_tools = setting["builtin_tools"]
+    var callable_subagents = setting["callable_subagents"]
+
+    var tool_card_body = JSON.stringify(builtin_tools, null, 2)
+    var callable_subagent_card_body = JSON.stringify(callable_subagents, null, 2)
+
+    var collapseCardBody = `
+      ${card("内置工具", tool_card_body)}
+      ${card("可调 SubAgent", callable_subagent_card_body)}
+    `
+    return collapseCard(name, collapseCardBody)
+  }).join(""),
 
   test: () => card("测试", `
     ${collapseCard("内置工具信息", JSON.stringify(builtinToolsInfo, null, 2))}
     ${collapseCard("SubAgent 配置", JSON.stringify(config, null, 2))}
     ${collapseCard("已注册 SubAgent 名称", JSON.stringify(subAgentNames, null, 2))}
+    ${collapseCard("默认 SubAgent 配置", JSON.stringify(config["subagent_default_setting"], null, 2))}
   `),
 };
 
