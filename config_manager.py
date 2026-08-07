@@ -147,12 +147,12 @@ class PluginConfigManager(dict):
 
     _instance = None     # 单例实例
 
-    def __new__(cls, plugin_name: str = None):
+    def __new__(cls, plugin_name: str | None = None):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, plugin_name: str = None) -> None:
+    def __init__(self, plugin_name: str | None = None) -> None:
         if hasattr(self, "_initialized"):
             return
         super().__init__()
