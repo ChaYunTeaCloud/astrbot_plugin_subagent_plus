@@ -154,15 +154,6 @@ els.body.addEventListener("click", handleCollapseClick);
 
 
 // ==================== UI 组件 ====================
-function card(title, content, show = true, className = "") {
-  const classes = ["card"];
-  if (show === false) classes.push("hidden");
-  if (className) classes.push(className);
-  return `<div class="${classes.join(" ")}">
-    <h3>${title}</h3>
-    ${content}
-  </div>`;
-}
 
 /**
  * 横向网格布局容器：把多个子卡片横向多列排列（自动换行）
@@ -173,6 +164,16 @@ function grid(...items) {
   return `<div style="display:flex;flex-wrap:wrap;gap:12px;width:100%">${items.map(item => 
     `<div style="flex:0 0 260px;min-width:0">${item}</div>`
   ).join("")}</div>`;
+}
+
+function card(title, content, show = true, className = "") {
+  const classes = ["card"];
+  if (show === false) classes.push("hidden");
+  if (className) classes.push(className);
+  return `<div class="${classes.join(" ")}">
+    <h3>${title}</h3>
+    ${content}
+  </div>`;
 }
 
 function collapseCard(title, content, expanded = false) {
