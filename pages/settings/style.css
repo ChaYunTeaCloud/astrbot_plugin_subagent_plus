@@ -143,17 +143,8 @@ body {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(440px, 580px));
-  gap: 16px;
-  align-content: start;
-  align-items: start;
-  justify-content: center;
-}
-
-.body > .card,
-.body > .collapse-card {
-  margin-bottom: 0;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .card {
@@ -204,6 +195,21 @@ body {
 .card.card-highlight-purple {
   border-color: #d8b4fe;
   background: linear-gradient(180deg, #faf5ff 0%, #fff 30%);
+}
+
+/* card 内部横向多列布局容器 */
+.card-grid {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+/* grid 内的子卡片去掉外层 margin */
+.card-grid > .card,
+.grid-item > .card,
+.card-grid > div > .card {
+  margin-bottom: 0 !important;
 }
 
 .hint {

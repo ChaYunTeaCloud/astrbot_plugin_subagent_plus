@@ -40,29 +40,32 @@ const tabs = {
     return card(card_title, card_body);
   },
 
-  subAgentConfig: () => subAgentNames.map(name =>{
-    var base = `subagent_settings.${name}`;
+  subAgentConfig: () => grid(
+    ...subAgentNames.map(name =>{
+      var base = `subagent_settings.${name}`;
 
-    // 可调 SubAgent 选项：排除自己，排除路由层（如果启用）
-    var router_name = get("router_mode_enabled", false) ? get("router_subagent_name", "") : "";
-    var isRouter = name === router_name;
-    var callable_options = subAgentNames.filter(n => n !== name && n !== router_name)
-      .map(n => ({ value: n, label: n }));
+      // 可调 SubAgent 选项：排除自己，排除路由层（如果启用）
+      var router_name = get("router_mode_enabled", false) ? get("router_subagent_name", "") : "";
+      var isRouter = name === router_name;
+      var callable_options = subAgentNames.filter(n => n !== name && n !== router_name)
+        .map(n => ({ value: n, label: n }));
 
-    var collapseCardBody = `
-      ${modalCard("可调 SubAgent", () => chklist(`${base}.callable_subagents`, callable_options, "", "全选"))}
-      ${modalCard("内置工具", () => chklist_groups(`${base}.builtin_tools`, builtinToolsInfo.groups || {}))}
-    `;
-    var title = isRouter ? `${name} <span class="tag tag-purple">路由层</span>` : name;
-    return card(title, collapseCardBody, true, isRouter ? "card-highlight-purple" : "");
-  }).join(""),
+      var collapseCardBody = `
+        ${modalCard("可调 SubAgent", () => chklist(`${base}.callable_subagents`, callable_options, "", "全选"))}
+        ${modalCard("内置工具", () => chklist_groups(`${base}.builtin_tools`, builtinToolsInfo.groups || {}))}
+      `;
+      var title = isRouter ? `${name} <span class="tag tag-purple">路由层</span>` : name;
+      return card(title, collapseCardBody, true, isRouter ? "card-highlight-purple" : "");
+    })
+  ),
 
-  test: () => card("测试", `
-    ${collapseCard("内置工具信息", `<pre>${JSON.stringify(builtinToolsInfo, null, 2)}</pre>`)}
-    ${collapseCard("SubAgent 配置", `<pre>${JSON.stringify(config, null, 2)}</pre>`)}
-    ${collapseCard("已注册 SubAgent 名称", `<pre>${JSON.stringify(subAgentNames, null, 2)}</pre>`)}
-    ${collapseCard("默认 SubAgent 配置", `<pre>${JSON.stringify(config["subagent_default_setting"], null, 2)}</pre>`)}
-  `),
+  test: () => card(`测试`,
+    `${
+      collapseCard("内置工具信息", `<pre>${JSON.stringify(builtinToolsInfo, null, 2)}</pre>`)+
+      collapseCard("SubAgent 配置", `<pre>${JSON.stringify(config, null, 2)}</pre>`)+
+      collapseCard("已注册 SubAgent 名称", `<pre>${JSON.stringify(subAgentNames, null, 2)}</pre>`)+
+      collapseCard("默认 SubAgent 配置", `<pre>${JSON.stringify(config["subagent_default_setting"], null, 2)}</pre>`)
+    }`),
 };
 
 // ─── 交互事件处理器（可复用，通过 e.currentTarget 自动隔离作用域） ────────────────
@@ -159,6 +162,17 @@ function card(title, content, show = true, className = "") {
     <h3>${title}</h3>
     ${content}
   </div>`;
+}
+
+/**
+ * 横向网格布局容器：把多个子卡片横向多列排列（自动换行）
+ * @param {...string} items - 子项 HTML
+ * @returns {string} 包裹后的 grid 容器 HTML
+ */
+function grid(...items) {
+  return `<div style="display:flex;flex-wrap:wrap;gap:12px;width:100%">${items.map(item => 
+    `<div style="flex:0 0 260px;min-width:0">${item}</div>`
+  ).join("")}</div>`;
 }
 
 function collapseCard(title, content, expanded = false) {
