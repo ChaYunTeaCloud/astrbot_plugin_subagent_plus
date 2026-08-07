@@ -61,10 +61,10 @@ const tabs = {
   }).join(""),
 
   test: () => card("测试", `
-    ${collapseCard("内置工具信息", JSON.stringify(builtinToolsInfo, null, 2))}
-    ${collapseCard("SubAgent 配置", JSON.stringify(config, null, 2))}
-    ${collapseCard("已注册 SubAgent 名称", JSON.stringify(subAgentNames, null, 2))}
-    ${collapseCard("默认 SubAgent 配置", JSON.stringify(config["subagent_default_setting"], null, 2))}
+    ${collapseCard("内置工具信息", `<pre>${JSON.stringify(builtinToolsInfo, null, 2)}</pre>`)}
+    ${collapseCard("SubAgent 配置", `<pre>${JSON.stringify(config, null, 2)}</pre>`)}
+    ${collapseCard("已注册 SubAgent 名称", `<pre>${JSON.stringify(subAgentNames, null, 2)}</pre>`)}
+    ${collapseCard("默认 SubAgent 配置", `<pre>${JSON.stringify(config["subagent_default_setting"], null, 2)}</pre>`)}
   `),
 };
 

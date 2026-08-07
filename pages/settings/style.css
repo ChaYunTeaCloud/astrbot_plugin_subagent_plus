@@ -22,27 +22,35 @@ body {
 
 /* ─── 顶部栏 ──────────────────────────── */
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 20px;
-  background: #fff;
+  padding: 14px 24px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(8px);
+  -webkit-backdrop-filter: saturate(180%) blur(8px);
   border-bottom: 1px solid #e5e6eb;
 }
 
 .topbar h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   flex: 0 0 auto;
+  color: #1d2129;
+  letter-spacing: 0.2px;
 }
 
 .badge {
   flex: 0 0 auto;
-  padding: 2px 10px;
+  padding: 3px 10px;
   border-radius: 10px;
   font-size: 12px;
   font-weight: 500;
+  transition: all 0.2s;
 }
 
 .badge.loading {
@@ -67,31 +75,45 @@ body {
 
 .btn {
   margin-left: auto;
-  padding: 6px 16px;
+  padding: 7px 18px;
   border: none;
   border-radius: 6px;
   background: #165dff;
   color: #fff;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: all 0.15s;
+  box-shadow: 0 1px 2px rgba(22, 93, 255, 0.2);
 }
 
 .btn:hover:not(:disabled) {
   background: #0e42d2;
+  box-shadow: 0 2px 6px rgba(22, 93, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .btn:disabled {
   background: #a5b3c5;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* ─── Tabs ──────────────────────────── */
 .tabs {
+  position: sticky;
+  top: 53px;
+  z-index: 9;
   display: flex;
   gap: 4px;
-  padding: 0 20px;
-  background: #fff;
+  padding: 0 24px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(8px);
+  -webkit-backdrop-filter: saturate(180%) blur(8px);
   border-bottom: 1px solid #e5e6eb;
 }
 
@@ -100,7 +122,7 @@ body {
   border: none;
   background: transparent;
   color: #4e5969;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.15s;
@@ -119,10 +141,10 @@ body {
 /* ─── 主体 ──────────────────────────── */
 .body {
   flex: 1;
-  padding: 20px;
+  padding: 24px;
   overflow-y: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(450px, 600px));
+  grid-template-columns: repeat(auto-fit, minmax(440px, 580px));
   gap: 16px;
   align-content: start;
   align-items: start;
@@ -137,21 +159,31 @@ body {
 .card {
   background: #fff;
   border: 1px solid #e5e6eb;
-  border-radius: 8px;
-  padding: 16px 20px;
+  border-radius: 10px;
+  padding: 18px 22px;
   margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-color: #d9dce0;
 }
 
 .card h3 {
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
   font-size: 14px;
   font-weight: 600;
+  color: #1d2129;
+  letter-spacing: 0.2px;
 }
 
 .hint {
   margin: 0 0 12px 0;
   color: #86909c;
   font-size: 12px;
+  line-height: 1.5;
 }
 
 .placeholder {
@@ -160,7 +192,7 @@ body {
   color: #c9cdd4;
   background: #f7f8fa;
   border: 1px dashed #d9dce0;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 13px;
 }
 
@@ -169,7 +201,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
 }
 
 .field label {
@@ -178,55 +214,40 @@ body {
   color: #1f2329;
 }
 
-.field input[type="number"] {
-  width: 120px;
-  padding: 6px 10px;
-  border: 1px solid #d9dce0;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #1f2329;
-  background: #fff;
-  transition: border-color 0.15s;
-}
-
-.field input[type="text"] {
-  width: 320px;
-  max-width: 100%;
-  padding: 6px 10px;
-  border: 1px solid #d9dce0;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #1f2329;
-  background: #fff;
-  transition: border-color 0.15s;
-}
-
-.field input[type="text"]:focus {
-  outline: none;
-  border-color: #165dff;
-}
-
-.field input[type="number"]:focus {
-  outline: none;
-  border-color: #165dff;
-}
-
+.field input[type="number"],
+.field input[type="text"],
 .field select {
-  width: 320px;
-  max-width: 100%;
-  padding: 6px 10px;
+  padding: 7px 12px;
   border: 1px solid #d9dce0;
   border-radius: 6px;
   font-size: 13px;
   color: #1f2329;
   background: #fff;
-  cursor: pointer;
-  transition: border-color 0.15s;
+  transition: all 0.15s;
 }
 
+.field input[type="number"] {
+  width: 140px;
+}
+
+.field input[type="text"],
+.field select {
+  width: 100%;
+  max-width: 360px;
+}
+
+.field input[type="text"]:focus,
+.field input[type="number"]:focus,
 .field select:focus {
   outline: none;
   border-color: #165dff;
+  box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.12);
+}
+
+.field input[type="number"]:hover:not(:focus),
+.field input[type="text"]:hover:not(:focus),
+.field select:hover:not(:focus) {
+  border-color: #b8bcc4;
 }
 
 .field .chk-label {
@@ -236,6 +257,7 @@ body {
   cursor: pointer;
   font-weight: normal;
   user-select: none;
+  padding: 6px 0;
 }
 
 .field .chk-label input[type="checkbox"] {
@@ -281,25 +303,52 @@ body {
 /* ─── 折叠卡片 ──────────────────────────── */
 .collapse-card {
   padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.collapse-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #165dff 0%, #4080ff 100%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.collapse-card:hover::before {
+  opacity: 1;
 }
 
 .collapse-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 16px 22px;
   cursor: pointer;
   user-select: none;
+  transition: background 0.15s;
+}
+
+.collapse-header:hover {
+  background: #f7f8fa;
 }
 
 .collapse-header h3 {
   margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d2129;
 }
 
 .collapse-arrow {
-  font-size: 14px;
+  font-size: 12px;
   color: #86909c;
   transition: transform 0.2s;
+  display: inline-block;
 }
 
 .collapse-card.collapsed .collapse-arrow {
@@ -307,12 +356,36 @@ body {
 }
 
 .collapse-body {
-  padding: 0 20px 16px 20px;
-  border-top: 1px solid #e5e6eb;
+  padding: 4px 22px 18px 22px;
+  border-top: 1px solid #f0f1f3;
 }
 
 .collapse-card.collapsed .collapse-body {
   display: none;
+}
+
+/* 嵌套折叠卡片（如 SubAgent 卡片内的子卡片） */
+.collapse-card .collapse-card {
+  border: 1px solid #ebedf0;
+  background: #fafbfc;
+  margin-bottom: 12px;
+}
+
+.collapse-card .collapse-card:last-child {
+  margin-bottom: 0;
+}
+
+.collapse-card .collapse-card .collapse-header {
+  padding: 12px 16px;
+}
+
+.collapse-card .collapse-card .collapse-header h3 {
+  font-size: 13px;
+  color: #4e5969;
+}
+
+.collapse-card .collapse-card .collapse-body {
+  padding: 8px 16px 14px 16px;
 }
 
 /* ─── 多选列表 ──────────────────────────── */
@@ -325,12 +398,12 @@ body {
 .chklist-item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 10px;
+  padding: 8px 10px;
   border-radius: 6px;
   cursor: pointer;
   line-height: 1.5;
-  transition: background 0.15s;
+  transition: background 0.12s;
 }
 
 .chklist-item:hover {
@@ -349,7 +422,7 @@ body {
 }
 
 .chklist-item-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #1d2129;
 }
@@ -358,7 +431,7 @@ body {
   font-size: 12px;
   color: #86909c;
   margin-top: 2px;
-  line-height: 1.4;
+  line-height: 1.45;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -380,11 +453,11 @@ body {
 
 /* ─── 分组多选列表 ──────────────────────── */
 .chklist-group + .chklist-group {
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .chklist-group-hd {
-  padding: 4px 8px;
+  padding: 4px 6px;
   background: #f7f8fa;
   border-radius: 6px 6px 0 0;
   border: 1px solid #e5e6eb;
@@ -392,19 +465,61 @@ body {
 }
 
 .chklist-group-hd .chklist-item {
-  padding: 4px 8px;
+  padding: 4px 6px;
 }
 
 .chklist-group-hd .chklist-item:hover {
   background: transparent;
 }
 
+.chklist-group-hd .chklist-item-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4e5969;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
 .chklist-group-bd {
-  padding: 4px 8px 8px 8px;
+  padding: 4px 6px 6px 6px;
   border: 1px solid #e5e6eb;
   border-top: none;
   border-radius: 0 0 6px 6px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  background: #fff;
+}
+
+/* ─── 测试 Tab JSON 展示 ──────────────────────── */
+.collapse-card pre {
+  margin: 8px 0 0 0;
+  padding: 12px;
+  background: #f7f8fa;
+  border-radius: 6px;
+  font-family: "SF Mono", "Consolas", "Monaco", monospace;
+  font-size: 12px;
+  color: #4e5969;
+  overflow-x: auto;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ─── 滚动条美化 ──────────────────────────── */
+.body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.body::-webkit-scrollbar-thumb {
+  background: #d9dce0;
+  border-radius: 4px;
+}
+
+.body::-webkit-scrollbar-thumb:hover {
+  background: #b8bcc4;
 }
