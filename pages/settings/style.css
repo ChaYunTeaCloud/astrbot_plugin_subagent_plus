@@ -179,6 +179,10 @@ body {
   letter-spacing: 0.2px;
 }
 
+.card.hidden {
+  display: none;
+}
+
 .hint {
   margin: 0 0 12px 0;
   color: #86909c;

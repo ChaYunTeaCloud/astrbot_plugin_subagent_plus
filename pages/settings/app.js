@@ -40,7 +40,8 @@ const tabs = {
             subAgentNames,
             "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。",
           ),
-          get("router_mode_enabled")
+          get("router_mode_enabled"),
+          "router-config-card"
         )}`
     return card(card_title, card_body);
   },
@@ -68,32 +69,35 @@ const tabs = {
   `),
 };
 
-els.body.addEventListener("input", (e) => {
+// ─── 交互事件处理器（可复用，通过 e.currentTarget 自动隔离作用域） ────────────────
+function handleInput(e) {
+  const root = e.currentTarget;
   if (e.target.dataset?.p === "max_call_subagent_depth") {
     e.target.value = e.target.value.replace(/^0+(?=\d)|-/g, ""); // 移除前导零和负号
   }
   if (e.target.dataset?.p === "router_mode_enabled") {
-    show("basic");
+    // 用 CSS 控制路由配置卡片显隐，避免重渲染丢失焦点/滚动位置
+    const routerCard = root.querySelector(".router-config-card");
+    if (routerCard) routerCard.classList.toggle("hidden", !e.target.checked);
   }
 
   // 多选列表：单个选项变化 -> 更新 path 数组
   if (e.target.dataset?.list) {
     const path = e.target.dataset.list;
-    const values = [...els.body.querySelectorAll(`input[data-list="${path}"]:checked`)].map(el => el.value);
+    const values = [...root.querySelectorAll(`input[data-list="${path}"]:checked`)].map(el => el.value);
     set(path, values);
-    // 同步对应全选框状态
-    _syncSelectAll(path);
+    _syncSelectAll(path, root);
     refreshStatus();
   }
 
   // 多选列表：全选按钮
   if (e.target.dataset?.selectall) {
     const path = e.target.dataset.selectall;
-    const all = els.body.querySelectorAll(`input[data-list="${path}"]`);
+    const all = root.querySelectorAll(`input[data-list="${path}"]`);
     all.forEach(el => el.checked = e.target.checked);
     const values = [...all].filter(el => el.checked).map(el => el.value);
     set(path, values);
-    _syncSelectAll(path);
+    _syncSelectAll(path, root);
     refreshStatus();
   }
 
@@ -103,27 +107,24 @@ els.body.addEventListener("input", (e) => {
     const group = e.target.closest(".chklist-group");
     const items = group.querySelectorAll(`input[data-list="${path}"]`);
     items.forEach(el => el.checked = e.target.checked);
-    // 同步整个 path 的值
-    const values = [...els.body.querySelectorAll(`input[data-list="${path}"]:checked`)].map(el => el.value);
+    const values = [...root.querySelectorAll(`input[data-list="${path}"]:checked`)].map(el => el.value);
     set(path, values);
-    _syncSelectAll(path);
+    _syncSelectAll(path, root);
     refreshStatus();
   }
-});
+}
 
 // 同步指定 path 的所有全选框状态（普通全选+分组全选）
-function _syncSelectAll(path) {
-  const items = [...els.body.querySelectorAll(`input[data-list="${path}"]`)];
+function _syncSelectAll(path, root = els.body) {
+  const items = [...root.querySelectorAll(`input[data-list="${path}"]`)];
   const total = items.length;
   const checked = items.filter(el => el.checked).length;
-  // 普通全选
-  const sa = els.body.querySelector(`input[data-selectall="${path}"]`);
+  const sa = root.querySelector(`input[data-selectall="${path}"]`);
   if (sa) {
     sa.checked = total > 0 && checked === total;
     sa.indeterminate = checked > 0 && checked < total;
   }
-  // 分组全选
-  els.body.querySelectorAll(`input[data-selectall-group="${path}"]`).forEach(g => {
+  root.querySelectorAll(`input[data-selectall-group="${path}"]`).forEach(g => {
     const group = g.closest(".chklist-group");
     const gItems = [...group.querySelectorAll(`input[data-list="${path}"]`)];
     const gTotal = gItems.length;
@@ -132,20 +133,33 @@ function _syncSelectAll(path) {
     g.indeterminate = gChecked > 0 && gChecked < gTotal;
   });
 }
-els.body.addEventListener("keydown", (e) => {
+
+function handleKeydown(e) {
   if (e.target.dataset?.p === "max_call_subagent_depth") {
     if (e.key.length === 1 && !/[0-9]/.test(e.key)) {
       e.preventDefault();
       showTip(e.target, "只允许输入 0 或正整数");
     }
   }
-});
+}
+
+function handleCollapseClick(e) {
+  const header = e.target.closest(".collapse-header");
+  if (header) header.parentElement.classList.toggle("collapsed");
+}
+
+// 绑定到 els.body（主区域）
+els.body.addEventListener("input", handleInput);
+els.body.addEventListener("keydown", handleKeydown);
+els.body.addEventListener("click", handleCollapseClick);
 
 
 // ==================== UI 组件 ====================
-function card(title, content, show = true) {
-  if (show === false) return "";
-  return `<div class="card">  
+function card(title, content, show = true, className = "") {
+  const classes = ["card"];
+  if (show === false) classes.push("hidden");
+  if (className) classes.push(className);
+  return `<div class="${classes.join(" ")}">
     <h3>${title}</h3>
     ${content}
   </div>`;
@@ -337,6 +351,7 @@ function set(path, val) {
     o = o[ks[i]];
   }
   o[ks[ks.length - 1]] = val;
+  _configDirty = true; // 标记 config 已变化，下次 refreshStatus 重新比较
 }
 
 // 设置状态显示
@@ -358,22 +373,29 @@ function showTip(el, msg) {
   setTimeout(() => tip.remove(), 2000);
 }
 
+// 脏标记：避免每次 input 都做 JSON.stringify 双向序列化比较
+let _configDirty = true;
+let _lastConfigStr = "";
+let _lastSavedStr = "";
+
 // 检查 config 与 savedConfig 是否一致，自动更新状态
 function refreshStatus() {
-  const changed = JSON.stringify(config) !== JSON.stringify(savedConfig);
+  if (_configDirty) {
+    _lastConfigStr = JSON.stringify(config);
+    _lastSavedStr = JSON.stringify(savedConfig);
+    _configDirty = false;
+  }
+  const changed = _lastConfigStr !== _lastSavedStr;
   setStatus(changed ? "配置已修改" : "已加载", changed ? "warn" : "ok");
 }
 
-// 给所有 [data-p] 元素绑定实时更新 config 的监听事件（由 show() 调用）
-function bindAll() {
-  els.body.querySelectorAll("[data-p]").forEach((el) => {
+// 给指定容器内所有 [data-p] 元素绑定实时更新 config 的监听事件
+function bindDataP(root) {
+  root.querySelectorAll("[data-p]").forEach((el) => {
     const handler = () => {
       let v = el.value;
-      if (el.type === "checkbox") v = el.checked; // 处理复选框
-      else if (el.type === "number") {  // 处理数字输入框
-        const n = parseFloat(v);
-        v = isNaN(n) ? v : n;
-      }
+      if (el.type === "checkbox") v = el.checked;
+      else if (el.type === "number") { const n = parseFloat(v); v = isNaN(n) ? v : n; }
       set(el.dataset.p, v);
       refreshStatus();
     };
@@ -382,8 +404,18 @@ function bindAll() {
   });
 }
 
+// 给所有 [data-p] 元素绑定实时更新 config 的监听事件（由 show() 调用）
+function bindAll() {
+  bindDataP(els.body);
+}
+
 // 显示 Tab 内容
 function show(name) {
+  // 清空 modalCard 注册表并关闭残留 modal，避免内存泄漏和孤儿 DOM
+  for (const k in _modalCardFns) delete _modalCardFns[k];
+  _modalCardSeq = 0;
+  document.getElementById("modal-overlay")?.remove();
+
   document.querySelectorAll("#tabs .tab").forEach((t) => t.classList.remove("on"));
   document.querySelector(`#tabs .tab[data-t="${name}"]`)?.classList.add("on");
   els.body.innerHTML = (tabs[name] || tabs.basic)();
@@ -396,12 +428,6 @@ document.getElementById("tabs").addEventListener("click", (e) => {
   if (tab) show(tab.dataset.t);
 });
 
-// 绑定折叠卡片点击事件
-els.body.addEventListener("click", (e) => {
-  const header = e.target.closest(".collapse-header");
-  if (header) header.parentElement.classList.toggle("collapsed");
-});
-
 // ─── Modal 弹窗逻辑 ───────────────────────────
 // 点击触发按钮：打开 modal（委托到 els.body）
 els.body.addEventListener("click", (e) => {
@@ -410,12 +436,10 @@ els.body.addEventListener("click", (e) => {
   const id = trigger.dataset.mc;
   const entry = _modalCardFns[id];
   if (!entry) return;
-  // 每次点击都重新执行 contentFn，读取最新 config 生成 HTML
   openModal(entry.title, entry.contentFn());
 });
 
 function openModal(title, content) {
-  // 若已存在则先移除
   document.getElementById("modal-overlay")?.remove();
   const overlay = document.createElement("div");
   overlay.id = "modal-overlay";
@@ -429,24 +453,18 @@ function openModal(title, content) {
       <div class="modal-bd">${content}</div>
     </div>
   `;
-  // 关键：append 到 els.body 内，使 modal 内的 input/click 事件冒泡到 els.body 上已有的监听器
-  els.body.appendChild(overlay);
-  // 强制 reflow 后添加 show 类触发过渡
+  // append 到 document.body，与主区域 DOM 隔离，避免 querySelectorAll 互相干扰
+  document.body.appendChild(overlay);
   overlay.offsetHeight;
   overlay.classList.add("show");
 
-  // 给 modal 内的 [data-p] 元素绑定实时更新（与 bindAll 同逻辑）
-  overlay.querySelectorAll("[data-p]").forEach((el) => {
-    const handler = () => {
-      let v = el.value;
-      if (el.type === "checkbox") v = el.checked;
-      else if (el.type === "number") { const n = parseFloat(v); v = isNaN(n) ? v : n; }
-      set(el.dataset.p, v);
-      refreshStatus();
-    };
-    el.addEventListener("input", handler);
-    el.addEventListener("change", handler);
-  });
+  // 复用 bindDataP 绑定 [data-p] 元素
+  bindDataP(overlay);
+
+  // 绑定与主区域相同的交互处理器（通过 e.currentTarget 自动隔离查询作用域）
+  overlay.addEventListener("input", handleInput);
+  overlay.addEventListener("keydown", handleKeydown);
+  overlay.addEventListener("click", handleCollapseClick);
 
   // 关闭逻辑：点击遮罩、关闭按钮、ESC
   const close = () => {
@@ -468,6 +486,7 @@ els.btnSave.addEventListener("click", async () => {
     const result = await api.postConfig(config);
     if (result.success) {
       Object.assign(savedConfig, JSON.parse(JSON.stringify(config)));  // 深拷贝快照
+      _configDirty = true; // 触发下次 refreshStatus 重新比较
       setStatus("保存成功", "ok");
     } else {
       setStatus("保存失败", "err");
