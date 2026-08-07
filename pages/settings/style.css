@@ -122,7 +122,7 @@ body {
   padding: 20px;
   overflow-y: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(450px, 600px));
+  grid-template-columns: repeat(auto-fit, minmax(450px, 600px));
   gap: 16px;
   align-content: start;
   align-items: start;
