@@ -54,10 +54,10 @@ const tabs = {
       .map(n => ({ value: n, label: n }));
 
     var collapseCardBody = `
-    ${collapseCard("可调 SubAgent", chklist(`${base}.callable_subagents`, callable_options, "", "全选"))}
-      ${collapseCard("内置工具", chklist_groups(`${base}.builtin_tools`, builtinToolsInfo.groups || {}))}
+      ${modalCard("可调 SubAgent", () => chklist(`${base}.callable_subagents`, callable_options, "", "全选"))}
+      ${modalCard("内置工具", () => chklist_groups(`${base}.builtin_tools`, builtinToolsInfo.groups || {}))}
     `;
-    return collapseCard(name, collapseCardBody);
+    return card(name, collapseCardBody);
   }).join(""),
 
   test: () => card("测试", `
@@ -93,13 +93,13 @@ els.body.addEventListener("input", (e) => {
     all.forEach(el => el.checked = e.target.checked);
     const values = [...all].filter(el => el.checked).map(el => el.value);
     set(path, values);
+    _syncSelectAll(path);
     refreshStatus();
   }
 
   // 分组多选列表：分组全选
   if (e.target.dataset?.selectallGroup) {
     const path = e.target.dataset.selectallGroup;
-    const gname = e.target.dataset.group;
     const group = e.target.closest(".chklist-group");
     const items = group.querySelectorAll(`input[data-list="${path}"]`);
     items.forEach(el => el.checked = e.target.checked);
@@ -161,6 +161,36 @@ function collapseCard(title, content, expanded = false) {
   </div>`;
 }
 
+/**
+ * 弹窗卡片：渲染一个带"查看"按钮的卡片，点击按钮弹出 modal 浮层显示内容。
+ * 与 card / collapseCard 并存，作为通用组件，按需选用。
+ * 注意：contentFn 会在每次点击 trigger 时执行，读取最新 config 状态生成 HTML。
+ * @param {string} title - 卡片标题（同时作为 modal 标题）
+ * @param {function():string} contentFn - 返回弹窗内 HTML 内容的函数（每次打开时调用）
+ * @param {string} [triggerLabel="查看详情"] - 触发按钮文字
+ */
+function modalCard(title, contentFn, triggerLabel = "查看详情") {
+  // 用唯一 id 关联按钮与渲染函数，避免闭包序列化问题
+  const id = `mc_${_modalCardSeq++}`;
+  _modalCardFns[id] = { title, contentFn, triggerLabel };
+  return `<div class="card modal-card" data-mc="${id}">
+    <div class="modal-card-hd">
+      <h3>${title}</h3>
+      <button class="modal-trigger" data-mc="${id}">${triggerLabel}</button>
+    </div>
+  </div>`;
+}
+
+// modalCard 渲染函数注册表：id -> { title, contentFn, triggerLabel }
+const _modalCardFns = {};
+let _modalCardSeq = 0;
+
+/**
+ * 数字输入框组件（单行）
+ * @param {string} path - 写入 config 的路径（值为数字）
+ * @param {string} label - 数字输入框文字
+ * @param {string} [hint] - 提示文字
+ */
 function num(path, label, hint) {
   return `<div class="field">
     <label>${label}</label>
@@ -169,6 +199,12 @@ function num(path, label, hint) {
   </div>`;
 }
 
+/**
+ * 文本输入框组件（单行）
+ * @param {string} path - 写入 config 的路径（值为字符串）
+ * @param {string} label - 文本输入框文字
+ * @param {string} [hint] - 提示文字
+ */
 function txt(path, label, hint) {
   return `<div class="field">
     <label>${label}</label>
@@ -177,6 +213,13 @@ function txt(path, label, hint) {
   </div>`;
 }
 
+/**
+ * 下拉选择框组件（单选）
+ * @param {string} path - 写入 config 的路径（值为字符串）
+ * @param {string} label - 下拉选择框文字
+ * @param {Array<string>} options - 选项列表
+ * @param {string} [hint] - 提示文字
+ */
 function select(path, label, options, hint = "") {
   const cur = get(path, "");
   const opts = options.map(o => `<option value="${o}" ${o === cur ? "selected" : ""}>${o}</option>`).join("");
@@ -187,6 +230,12 @@ function select(path, label, options, hint = "") {
   </div>`;
 }
 
+/**
+ * 复选框组件（单选）
+ * @param {string} path - 写入 config 的路径（值为布尔值）
+ * @param {string} label - 复选框文字
+ * @param {string} [hint] - 提示文字
+ */
 function chk(path, label, hint = "") {
   const checked = get(path, false) ? "checked" : "";
   return `<div class="field">
@@ -352,6 +401,66 @@ els.body.addEventListener("click", (e) => {
   const header = e.target.closest(".collapse-header");
   if (header) header.parentElement.classList.toggle("collapsed");
 });
+
+// ─── Modal 弹窗逻辑 ───────────────────────────
+// 点击触发按钮：打开 modal（委托到 els.body）
+els.body.addEventListener("click", (e) => {
+  const trigger = e.target.closest(".modal-trigger");
+  if (!trigger) return;
+  const id = trigger.dataset.mc;
+  const entry = _modalCardFns[id];
+  if (!entry) return;
+  // 每次点击都重新执行 contentFn，读取最新 config 生成 HTML
+  openModal(entry.title, entry.contentFn());
+});
+
+function openModal(title, content) {
+  // 若已存在则先移除
+  document.getElementById("modal-overlay")?.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "modal-overlay";
+  overlay.className = "modal-overlay";
+  overlay.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-hd">
+        <h3>${title}</h3>
+        <button class="modal-close" aria-label="关闭">×</button>
+      </div>
+      <div class="modal-bd">${content}</div>
+    </div>
+  `;
+  // 关键：append 到 els.body 内，使 modal 内的 input/click 事件冒泡到 els.body 上已有的监听器
+  els.body.appendChild(overlay);
+  // 强制 reflow 后添加 show 类触发过渡
+  overlay.offsetHeight;
+  overlay.classList.add("show");
+
+  // 给 modal 内的 [data-p] 元素绑定实时更新（与 bindAll 同逻辑）
+  overlay.querySelectorAll("[data-p]").forEach((el) => {
+    const handler = () => {
+      let v = el.value;
+      if (el.type === "checkbox") v = el.checked;
+      else if (el.type === "number") { const n = parseFloat(v); v = isNaN(n) ? v : n; }
+      set(el.dataset.p, v);
+      refreshStatus();
+    };
+    el.addEventListener("input", handler);
+    el.addEventListener("change", handler);
+  });
+
+  // 关闭逻辑：点击遮罩、关闭按钮、ESC
+  const close = () => {
+    overlay.classList.remove("show");
+    setTimeout(() => overlay.remove(), 200);
+    document.removeEventListener("keydown", onKey);
+  };
+  const onKey = (ev) => { if (ev.key === "Escape") close(); };
+  overlay.addEventListener("click", (ev) => {
+    if (ev.target === overlay || ev.target.closest(".modal-close")) close();
+  });
+  document.addEventListener("keydown", onKey);
+}
+// ─── Modal 弹窗逻辑 ───────────────────────────
 
 // 绑定保存按钮点击事件
 els.btnSave.addEventListener("click", async () => {

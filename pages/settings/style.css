@@ -523,3 +523,149 @@ body {
 .body::-webkit-scrollbar-thumb:hover {
   background: #b8bcc4;
 }
+
+/* ─── Modal 弹窗卡片 ──────────────────────────── */
+.modal-card {
+  padding: 14px 22px;
+}
+
+.modal-card-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-card-hd h3 {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-trigger {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  border: 1px solid #165dff;
+  border-radius: 5px;
+  background: #fff;
+  color: #165dff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.modal-trigger:hover {
+  background: #165dff;
+  color: #fff;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+}
+
+.modal-overlay.show {
+  opacity: 1;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 720px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(12px) scale(0.98);
+  transition: transform 0.2s ease-out;
+}
+
+.modal-overlay.show .modal {
+  transform: translateY(0) scale(1);
+}
+
+.modal-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #e5e6eb;
+  flex-shrink: 0;
+}
+
+.modal-hd h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d2129;
+}
+
+.modal-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #86909c;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: #f2f3f5;
+  color: #1d2129;
+}
+
+.modal-bd {
+  padding: 20px 24px 24px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Modal 内嵌套的折叠卡片、字段等继承基础样式，间距适当收紧 */
+.modal-bd .collapse-card {
+  margin-bottom: 12px;
+}
+
+.modal-bd .collapse-card:last-child {
+  margin-bottom: 0;
+}
+
+.modal-bd .field:last-child {
+  margin-bottom: 0;
+}
+
+/* Modal 滚动条 */
+.modal-bd::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-bd::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-bd::-webkit-scrollbar-thumb {
+  background: #d9dce0;
+  border-radius: 4px;
+}
+
+.modal-bd::-webkit-scrollbar-thumb:hover {
+  background: #b8bcc4;
+}
