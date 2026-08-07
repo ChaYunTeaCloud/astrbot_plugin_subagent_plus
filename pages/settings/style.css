@@ -183,6 +183,29 @@ body {
   display: none;
 }
 
+/* 通用小标签（用于标题旁的状态标识，如"路由层"） */
+.tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+
+.tag-purple {
+  color: #7c3aed;
+  background: #f3e8ff;
+  border: 1px solid #d8b4fe;
+}
+
+.card.card-highlight-purple {
+  border-color: #d8b4fe;
+  background: linear-gradient(180deg, #faf5ff 0%, #fff 30%);
+}
+
 .hint {
   margin: 0 0 12px 0;
   color: #86909c;

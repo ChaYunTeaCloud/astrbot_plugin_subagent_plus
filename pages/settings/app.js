@@ -12,18 +12,12 @@ const api = {
   get: (endpoint) => bridge.apiGet(endpoint),
   getConfig: () => bridge.apiGet("config"),
   postConfig: (cfg) => bridge.apiPost("config", cfg),
-
-  getConfigByPath: (path) => bridge.apiGet(`config/${path}`),
-  setConfigByPath: (path, val) => bridge.apiPost(`config/${path}`, { value: val }),
-
-  getBuiltinToolsInfo: () => api.get("builtin_tools"),  // dict[group_name, dict[tool_name, tool_info]]
-  getSubagentNames: () => api.get("subagent_names"),  // list[subagent_name]
 };
 
 const config = {};       // 当前配置（实时同步表单）
 const savedConfig = {};  // 已保存的配置快照（用于比较是否修改）
-const builtinToolsInfo = await api.getBuiltinToolsInfo(); // 系统内置工具集映射表
-const subAgentNames = await api.getSubagentNames(); // 已注册 SubAgent 名称列表
+const builtinToolsInfo = await api.get("builtin_tools"); // 系统内置工具集映射表
+const subAgentNames = await api.get("subagent_names"); // 已注册 SubAgent 名称列表
 
 const tabs = {
   basic: () => {
@@ -51,6 +45,7 @@ const tabs = {
 
     // 可调 SubAgent 选项：排除自己，排除路由层（如果启用）
     var router_name = get("router_mode_enabled", false) ? get("router_subagent_name", "") : "";
+    var isRouter = name === router_name;
     var callable_options = subAgentNames.filter(n => n !== name && n !== router_name)
       .map(n => ({ value: n, label: n }));
 
@@ -58,7 +53,8 @@ const tabs = {
       ${modalCard("可调 SubAgent", () => chklist(`${base}.callable_subagents`, callable_options, "", "全选"))}
       ${modalCard("内置工具", () => chklist_groups(`${base}.builtin_tools`, builtinToolsInfo.groups || {}))}
     `;
-    return card(name, collapseCardBody);
+    var title = isRouter ? `${name} <span class="tag tag-purple">路由层</span>` : name;
+    return card(title, collapseCardBody, true, isRouter ? "card-highlight-purple" : "");
   }).join(""),
 
   test: () => card("测试", `
@@ -270,7 +266,6 @@ function chk(path, label, hint = "") {
  */
 function chklist(path, items, hint = "", selectAllLabel = "") {
   const cur = new Set(get(path, []));
-  const listId = path.replace(/\./g, "-");
   const allChecked = items.every(it => cur.has(it.value));
   const itemsHtml = items.map(it => `
     <label class="chklist-item">
@@ -290,7 +285,7 @@ function chklist(path, items, hint = "", selectAllLabel = "") {
     <div class="chklist-sep"></div>
   ` : "";
   return `<div class="field">
-    <div class="chklist" id="chklist-${listId}">
+    <div class="chklist">
       ${selectAllHtml}
       ${itemsHtml}
     </div>
@@ -402,11 +397,10 @@ function bindDataP(root) {
     el.addEventListener("input", handler);
     el.addEventListener("change", handler);
   });
-}
-
-// 给所有 [data-p] 元素绑定实时更新 config 的监听事件（由 show() 调用）
-function bindAll() {
-  bindDataP(els.body);
+  // 初始化分组全选框的 indeterminate 状态（HTML 的 data-indeterminate 属性无法直接生效）
+  root.querySelectorAll("input[data-indeterminate='true']").forEach((el) => {
+    el.indeterminate = true;
+  });
 }
 
 // 显示 Tab 内容
@@ -419,7 +413,7 @@ function show(name) {
   document.querySelectorAll("#tabs .tab").forEach((t) => t.classList.remove("on"));
   document.querySelector(`#tabs .tab[data-t="${name}"]`)?.classList.add("on");
   els.body.innerHTML = (tabs[name] || tabs.basic)();
-  bindAll();
+  bindDataP(els.body);
 }
 
 // 绑定切换 Tab 事件
