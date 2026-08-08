@@ -9,17 +9,28 @@
 <body>
 <div id="app">
   <div class="topbar">
-    <h2>SubAgent Plus插件 · 配置中心</h2>
-    <span class="badge loading" id="status">加载中...</span>
-    <button class="btn" id="btn-save">保存配置项</button>
+    <div class="topbar-brand">
+      <div class="brand-mark">S+</div>
+      <div class="topbar-title">
+        <h2>SubAgent Plus</h2>
+        <div class="topbar-subtitle">轻量配置中心 · 结构清晰，操作直接</div>
+      </div>
+    </div>
+    <div class="topbar-meta">
+      <span class="badge loading" id="status">加载中...</span>
+      <div class="topbar-actions">
+        <button class="btn btn-secondary" id="btn-reset">撤销改动</button>
+        <button class="btn" id="btn-save">保存配置项</button>
+      </div>
+    </div>
   </div>
-  <div class="tabs" id="tabs">
-    <button class="tab on" data-t="basic">基础</button>
-    <button class="tab" data-t="subAgentConfig">SubAgent配置</button>
-    <button class="tab" data-t="test">测试</button>
+  <div class="tabs" id="tabs" role="tablist" aria-label="配置中心导航">
+    <button class="tab on" data-t="basic" role="tab" id="tab-basic" aria-selected="true" aria-controls="body">基础</button>
+    <button class="tab" data-t="subAgentConfig" role="tab" id="tab-subAgentConfig" aria-selected="false" aria-controls="body">SubAgent配置</button>
+    <button class="tab" data-t="test" role="tab" id="tab-test" aria-selected="false" aria-controls="body">测试</button>
   </div>
-  <div id="body" class="body"></div>
+  <div id="body" class="body" role="tabpanel" aria-labelledby="tab-basic"></div>
 </div>
-<script type="module" src="./app.js"></script>
+<script type="module" src="./app.js?v=1.0.0"></script>
 </body>
 </html>
