@@ -1,38 +1,27 @@
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // 通用 UI 组件库 · 纯展示组件
 //
 // 设计原则：
 // 1. 只负责渲染 HTML 字符串，不关心数据源（调用方传 value）
 // 2. 不硬编码 data-* 协议，通过 attrs 透传，调用方自定义事件绑定
 // 3. 所有组件使用 options 对象传参，避免参数顺序问题
-// 4. title 纯文本自动转义；需要 HTML 标题时用 titleHtml
-// ═══════════════════════════════════════════════════════════
+// 4. card 的 title 纯文本自动转义；需要复杂 header 结构时用 panel 自行构造
+//
+// 依赖：./utils.js（escapeHtml / serializeAttrs）
+// 样式：./ui.css（组件库专用样式，可独立引入）
+// ═══════════════════════════════════════════════════════════════
+
+import { escapeHtml, serializeAttrs } from "./utils.js";
+
+export { escapeHtml } from "./utils.js";
 
 /**
- * HTML 转义
- * @param {string} value - 待转义的文本
- * @returns {string} 转义后的安全 HTML
+ * 网格布局
+ * @param {string[]} items - 每个 item 的 HTML 字符串
+ * @returns {string} HTML
  */
-export function escapeHtml(value) {
-  if (value == null) return "";
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-/**
- * 将 attrs 对象序列化为 HTML 属性字符串
- * @param {Object} attrs - 如 { "data-p": "foo", disabled: true }
- * @returns {string} ' data-p="foo" disabled'（true 输出裸属性，false/null 跳过）
- */
-function serializeAttrs(attrs = {}) {
-  return Object.entries(attrs)
-    .filter(([, v]) => v !== false && v != null)
-    .map(([k, v]) => (v === true ? ` ${k}` : ` ${k}="${escapeHtml(v)}"`))
-    .join("");
+export function grid(items = []) {
+  return `<div class="grid-layout">${items.map((item) => `<div class="grid-item">${item}</div>`).join("")}</div>`;
 }
 
 /**
@@ -71,33 +60,40 @@ export function sectionCard({ title, description = "", content }) {
 }
 
 /**
- * 网格布局
- * @param {string[]} items - 每个 item 的 HTML 字符串
- * @returns {string} HTML
- */
-export function grid(items = []) {
-  return `<div class="grid-layout">${items.map((item) => `<div class="grid-item">${item}</div>`).join("")}</div>`;
-}
-
-/**
  * 通用卡片（标题 + 内容）
  * @param {Object} options
  * @param {string} [options.title] - 纯文本标题（自动转义）
- * @param {string} [options.titleHtml] - HTML 标题（不转义，与 title 二选一）
  * @param {string} [options.content] - HTML 内容
  * @param {boolean} [options.show=true] - false 时添加 hidden 类
  * @param {string} [options.className] - 额外类名
  * @returns {string} HTML
  */
-export function card({ title = "", titleHtml = "", content = "", show = true, className = "" }) {
+export function card({ title = "", content = "", show = true, className = "" }) {
   const classes = ["card"];
   if (show === false) classes.push("hidden");
   if (className) classes.push(className);
-  const header = titleHtml || escapeHtml(title);
   return `<div class="${classes.join(" ")}">
-    <h3>${header}</h3>
+    <h3>${escapeHtml(title)}</h3>
     ${content}
   </div>`;
+}
+
+/**
+ * 纯容器（只提供边框与内边距，不假设内容结构）
+ *
+ * 适用于业务层需要完全自定义 header 布局的场景（例如标题行带状态徽章、
+ * summary pills 等）。card 组件的 title 是纯文本且自动转义，
+ * 当需要更复杂的 header 时，用 panel 自行构造内容。
+ *
+ * @param {Object} options
+ * @param {string} options.children - HTML 内容（由调用方构造，组件不做转义）
+ * @param {string} [options.className] - 额外类名（默认沿用 .card 外观）
+ * @returns {string} HTML
+ */
+export function panel({ children = "", className = "" }) {
+  const classes = ["card"];
+  if (className) classes.push(className);
+  return `<div class="${classes.join(" ")}">${children}</div>`;
 }
 
 /**

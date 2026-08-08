@@ -6,15 +6,16 @@ import {
   sectionCard,
   grid,
   card,
+  panel,
   collapseCard,
   numberInput,
   checkboxInput,
   selectInput,
   checkboxList,
   checkboxListGrouped,
-} from "./ui_helpers.js";
+} from "./components/ui_helpers.js";
 
-import * as modal from "./modal.js";
+import * as modal from "./components/modal.js";
 
 // ═══════════════════════════════════════════════════════════════
 // ── 模块入口 · 常量 ───────────────────────────────────────────
@@ -349,14 +350,14 @@ function renderSubAgentCard(name) {
     { count: callableSubagentsValue.length, label: "可调 SubAgent" },
   ]);
 
-  const titleHtml = `<div class="card-title-row">
+  const header = `<div class="card-title-row">
     <div class="card-title-main">${escapeHtml(name)}${isRouter ? '<span class="tag tag-purple">路由层</span>' : ""}</div>
     <div class="subagent-summary">${summary || '<span class="pill pill-muted">尚未配置</span>'}</div>
   </div>`;
 
   const content = buildSubAgentFieldSpecs(name).map(spec => modal.modalCard(spec.label, spec.content)).join("");
 
-  return card({ titleHtml, content, className: isRouter ? "card-highlight-purple" : "" });
+  return panel({ children: header + content, className: isRouter ? "card-highlight-purple" : "" });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -676,8 +677,8 @@ function registerEvents() {
   setSaveButtonState();
   setStatus("正在加载...", "loading");
 
-  // modal 模块依赖注入（bindDataP / bindScopeEventHandlers / escapeHtml）
-  modal.setup({ bindDataP, bindScopeEventHandlers, escapeHtml });
+  // modal 模块：注入渲染后钩子（具体做什么由业务层自主决定，modal 不假设语义）
+  modal.setup({ hooks: { afterRender: [bindDataP, bindScopeEventHandlers] } });
 
   registerEvents();
 

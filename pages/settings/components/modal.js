@@ -1,24 +1,35 @@
 // ═══════════════════════════════════════════════════════════════
-// Modal 弹窗模块 · 独立管理 modalCard 注册表与 openModal
-// 通过 setup() 接收外部依赖（bindDataP / bindScopeEventHandlers / escapeHtml）
-// 避免与 app.js 形成双向引用
+// Modal 弹窗组件 · 独立管理 modalCard 注册表与 openModal
+//
+// 依赖：
+// - ./utils.js（escapeHtml，纯函数，直接 import）
+// - 业务层通过 setup({ hooks }) 注入生命周期钩子
+//   hooks.afterRender(overlayElement)：内容注入 DOM 后调用
+//     可传单函数或函数数组。典型用途：同步表单值、绑定事件、
+//     初始化 tooltip 等——具体做什么由调用方自主决定，
+//     modal.js 不对业务语义做任何假设。
+//
+// 样式：./ui.css 的 .modal-* 类
 // ═══════════════════════════════════════════════════════════════
 
-let _escapeHtml = null;
-let _bindDataP = null;
-let _bindScopeEventHandlers = null;
+import { escapeHtml } from "./utils.js";
+
+let _afterRenderHooks = [];
 
 let _cardFns = {};
 let _cardSeq = 0;
 
 /**
- * 注入依赖（必须在首次使用 modalCard / openModal 前调用）
- * @param {{ bindDataP: Function, bindScopeEventHandlers: Function, escapeHtml: Function }} deps
+ * 配置 Modal 的生命周期钩子（首次使用前调用一次即可）
+ * @param {Object} [opts]
+ * @param {Function | Function[]} [opts.hooks.afterRender]
+ *        内容注入 Modal DOM 后依次执行，参数为 overlay 元素。
+ *        可用于同步表单初始值、绑定事件、初始化第三方组件等。
  */
-export function setup(deps) {
-  _bindDataP = deps.bindDataP;
-  _bindScopeEventHandlers = deps.bindScopeEventHandlers;
-  _escapeHtml = deps.escapeHtml;
+export function setup(opts = {}) {
+  const hooks = opts.hooks || {};
+  const raw = hooks.afterRender || [];
+  _afterRenderHooks = Array.isArray(raw) ? raw : [raw];
 }
 
 /** 清空 modalCard 注册表并移除残留 overlay */
@@ -41,12 +52,11 @@ export function getCardEntry(id) {
  * @param {() => string} contentFn 返回内容 HTML 的函数（惰性求值）
  */
 export function modalCard(title, contentFn) {
-  if (!_escapeHtml) throw new Error("modal.setup() 未调用");
   const id = `mc_${++_cardSeq}`;
   _cardFns[id] = { title, contentFn };
   return `<div class="modal-card">
     <div class="modal-card-hd">
-      <h3>${_escapeHtml(title)}</h3>
+      <h3>${escapeHtml(title)}</h3>
       <button class="modal-trigger" data-mc="${id}">配置</button>
     </div>
   </div>`;
@@ -58,9 +68,6 @@ export function modalCard(title, contentFn) {
  * @param {string} content 已渲染好的 HTML 字符串
  */
 export function openModal(title, content) {
-  if (!_escapeHtml || !_bindDataP || !_bindScopeEventHandlers) {
-    throw new Error("modal.setup() 未调用");
-  }
   document.getElementById("modal-overlay")?.remove();
   const overlay = document.createElement("div");
   overlay.id = "modal-overlay";
@@ -68,7 +75,7 @@ export function openModal(title, content) {
   overlay.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true">
       <div class="modal-hd">
-        <h3>${_escapeHtml(title)}</h3>
+        <h3>${escapeHtml(title)}</h3>
         <button class="modal-close" aria-label="关闭">×</button>
       </div>
       <div class="modal-bd">${content}</div>
@@ -78,8 +85,11 @@ export function openModal(title, content) {
   overlay.offsetHeight;
   overlay.classList.add("show");
 
-  _bindDataP(overlay);
-  _bindScopeEventHandlers(overlay);
+  for (const hook of _afterRenderHooks) {
+    try { hook(overlay); } catch (err) {
+      console.error("[modal] afterRender hook 执行失败：", err);
+    }
+  }
 
   const close = () => {
     overlay.classList.remove("show");
