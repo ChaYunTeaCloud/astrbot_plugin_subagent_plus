@@ -1,23 +1,6 @@
 // SubAgent Plus · 配置中心前端逻辑
 
-import {
-  escapeHtml,
-  emptyState,
-  sectionCard,
-  grid,
-  card,
-  panel,
-  collapseCard,
-  numberInput,
-  checkboxInput,
-  selectInput,
-  checkboxList,
-  checkboxListGrouped,
-  button,
-  badge,
-  tag,
-  pill,
-} from "./components/ui_helpers.js";
+import * as ui from "./components/ui_helpers.js";
 
 import * as modal from "./components/modal.js";
 import { showToast } from "./components/toast.js";
@@ -165,7 +148,7 @@ const basicFieldSpecs = [
     label: "路由 SubAgent 配置",
     className: "router-config-card",
     show: () => get("router_mode_enabled", false),
-    content: () => selectInput({
+    content: () => ui.selectInput({
       label: "路由 SubAgent 名称",
       value: get("router_subagent_name", ""),
       options: state.data.subAgentNames,
@@ -185,14 +168,14 @@ function buildSubAgentFieldSpecs(name) {
   const callableOptions = getCallableSubagentOptions(name);
 
   return [
-    { type: "modal", label: "可调 SubAgent", content: () => checkboxList({
+    { type: "modal", label: "可调 SubAgent", content: () => ui.checkboxList({
       items: callableOptions,
       values: get(`${base}.callable_subagents`, []),
       selectAllLabel: "全选",
       itemAttrs: { "data-list": `${base}.callable_subagents` },
       selectAllAttrs: { "data-selectall": `${base}.callable_subagents` },
     }) },
-    { type: "modal", label: "内置工具", content: () => checkboxListGrouped({
+    { type: "modal", label: "内置工具", content: () => ui.checkboxListGrouped({
       groups: state.data.builtinToolsInfo.groups || {},
       values: get(`${base}.builtin_tools`, []),
       itemAttrs: { "data-list": `${base}.builtin_tools` },
@@ -241,15 +224,15 @@ function renderFieldSpec(spec) {
   const val = get(spec.key);
   switch (spec.type) {
     case "number":
-      return numberInput({ label: spec.label, value: val ?? 0, hint: spec.hint, attrs: { "data-p": spec.key } });
+      return ui.numberInput({ label: spec.label, value: val ?? 0, hint: spec.hint, attrs: { "data-p": spec.key } });
     case "checkbox":
-      return checkboxInput({ label: spec.label, checked: !!val, hint: spec.hint, attrs: { "data-p": spec.key } });
+      return ui.checkboxInput({ label: spec.label, checked: !!val, hint: spec.hint, attrs: { "data-p": spec.key } });
     case "select":
-      return selectInput({ label: spec.label, value: val ?? "", options: resolveFieldOptions(spec.options), hint: spec.hint, attrs: { "data-p": spec.key } });
+      return ui.selectInput({ label: spec.label, value: val ?? "", options: resolveFieldOptions(spec.options), hint: spec.hint, attrs: { "data-p": spec.key } });
     case "card": {
       const content = typeof spec.content === "function" ? spec.content() : (spec.content || "");
       const visible = typeof spec.show === "function" ? spec.show() : (spec.show !== false);
-      return card({ title: spec.label, content, show: visible, className: spec.className || "" });
+      return ui.card({ title: spec.label, content, show: visible, className: spec.className || "" });
     }
     default:
       return "";
@@ -282,8 +265,8 @@ function renderConfigOverview() {
     <div class="overview-grid">
       ${overviewItems.map((item) => `
         <div class="overview-card">
-          <div class="overview-label">${escapeHtml(item.label)}</div>
-          <div class="overview-value">${escapeHtml(item.value)}</div>
+          <div class="overview-label">${ui.escapeHtml(item.label)}</div>
+          <div class="overview-value">${ui.escapeHtml(item.value)}</div>
         </div>
       `).join("")}
     </div>
@@ -310,25 +293,25 @@ function renderQuickGuide() {
     <div class="guide-list">
       ${items.map((item) => `
         <div class="guide-item">
-          <div class="guide-item-title">${escapeHtml(item.title)}</div>
-          <div class="guide-item-desc">${escapeHtml(item.desc)}</div>
+          <div class="guide-item-title">${ui.escapeHtml(item.title)}</div>
+          <div class="guide-item-desc">${ui.escapeHtml(item.desc)}</div>
         </div>
       `).join("")}
     </div>
   `;
 
-  return sectionCard({ title: "配置建议", description: "建议按这个顺序完成第一轮配置，让页面更容易维护。", content });
+  return ui.sectionCard({ title: "配置建议", description: "建议按这个顺序完成第一轮配置，让页面更容易维护。", content });
 }
 
 function renderSubAgentIntro() {
   const routerState = getRouterStateInfo();
   const routerHint = routerState.enabled ? (routerState.routerName ? `当前路由层：${routerState.routerName}` : "已开启路由模式，但尚未选择路由 SubAgent") : "路由模式当前关闭";
-  return sectionCard({
+  return ui.sectionCard({
     title: "SubAgent 配置",
     description: "为每个已注册的 SubAgent 设定可调用的下游代理与可用内置工具。",
     content: `<div class="subagent-intro">
       <div class="subagent-intro-row">
-        <span class="subagent-intro-pill">${escapeHtml(routerHint)}</span>
+        <span class="subagent-intro-pill">${ui.escapeHtml(routerHint)}</span>
         <span class="subagent-intro-pill subagent-intro-pill-muted">${state.data.subAgentNames.length ? `${state.data.subAgentNames.length} 个已注册` : "暂无已注册"}</span>
       </div>
       <div class="subagent-tip">点击卡片里的按钮，可以直接展开"可调用 SubAgent"和"内置工具"列表，快速完成精细化配置。</div>
@@ -343,7 +326,7 @@ function renderSubAgentIntro() {
 function buildPillSummary(items) {
   return items
     .filter((it) => it.count > 0)
-    .map((it) => pill({ text: `${it.label} ${it.count}` }))
+    .map((it) => ui.pill({ text: `${it.label} ${it.count}` }))
     .join("");
 }
 
@@ -357,13 +340,13 @@ function renderSubAgentCard(name) {
   ]);
 
   const header = `<div class="card-title-row">
-    <div class="card-title-main">${escapeHtml(name)}${isRouter ? tag({ text: "路由层", variant: "purple" }) : ""}</div>
-    <div class="subagent-summary">${summary || pill({ text: "尚未配置", variant: "muted" })}</div>
+    <div class="card-title-main">${ui.escapeHtml(name)}${isRouter ? ui.tag({ text: "路由层", variant: "purple" }) : ""}</div>
+    <div class="subagent-summary">${summary || ui.pill({ text: "尚未配置", variant: "muted" })}</div>
   </div>`;
 
   const content = buildSubAgentFieldSpecs(name).map(spec => modal.modalCard(spec.label, spec.content)).join("");
 
-  return panel({ children: header + content, className: isRouter ? "card-highlight-purple" : "" });
+  return ui.panel({ children: header + content, className: isRouter ? "card-highlight-purple" : "" });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -377,20 +360,20 @@ function renderBasicTab() {
     `<div class="hero-metrics">
       <div class="hero-metric">
         <span class="hero-metric-label">当前路由</span>
-        <strong>${escapeHtml(routerLabel)}</strong>
+        <strong>${ui.escapeHtml(routerLabel)}</strong>
       </div>
       <div class="hero-metric">
         <span class="hero-metric-label">最大嵌套深度</span>
-        <strong>${escapeHtml(get("max_call_subagent_depth"))}</strong>
+        <strong>${ui.escapeHtml(get("max_call_subagent_depth"))}</strong>
       </div>
       <div class="hero-metric">
         <span class="hero-metric-label">已注册</span>
-        <strong>${escapeHtml(state.data.subAgentNames.length || 0)} 个</strong>
+        <strong>${ui.escapeHtml(state.data.subAgentNames.length || 0)} 个</strong>
       </div>
     </div>`,
     renderConfigOverview(),
     renderQuickGuide(),
-    sectionCard({ title: "基础配置", description: "控制主流程、路由行为以及基础调用层级。", content: renderFieldGroup(basicFieldSpecs) }),
+    ui.sectionCard({ title: "基础配置", description: "控制主流程、路由行为以及基础调用层级。", content: renderFieldGroup(basicFieldSpecs) }),
   ].join("");
 }
 
@@ -400,15 +383,15 @@ function renderSubAgentConfigTab() {
   if (!state.data.subAgentNames.length) {
     return [
       intro,
-      sectionCard({
+      ui.sectionCard({
         title: "当前状态",
         description: "还没有可供配置的 SubAgent，请先在宿主端注册后再回来配置。",
-        content: emptyState({ title: "暂无已注册 SubAgent", description: "当前还没有可配置的 SubAgent，请先在宿主端注册后再回来配置。" }),
+        content: ui.emptyState({ title: "暂无已注册 SubAgent", description: "当前还没有可配置的 SubAgent，请先在宿主端注册后再回来配置。" }),
       }),
     ].join("");
   }
 
-  return [intro, grid(state.data.subAgentNames.map(renderSubAgentCard))].join("");
+  return [intro, ui.grid(state.data.subAgentNames.map(renderSubAgentCard))].join("");
 }
 
 function renderTestTab() {
@@ -419,9 +402,9 @@ function renderTestTab() {
     ["默认 SubAgent 配置", state.data.config.subagent_default_setting],
   ];
   const testContent = items.map(([title, data]) =>
-    collapseCard({ title, content: `<pre>${JSON.stringify(data, null, 2)}</pre>` })
+    ui.collapseCard({ title, content: `<pre>${JSON.stringify(data, null, 2)}</pre>` })
   ).join("");
-  return sectionCard({ title: "测试", description: "用于查看当前加载的数据与配置快照，便于排查和调试。", content: testContent });
+  return ui.sectionCard({ title: "测试", description: "用于查看当前加载的数据与配置快照，便于排查和调试。", content: testContent });
 }
 
 const tabRenderers = {
