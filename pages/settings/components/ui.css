@@ -655,17 +655,71 @@ body {
    5. 反馈组件 · toast / tipBubble
    ═══════════════════════════════════════════════════════════════ */
 
-/* ─── toast（右上角通知） ─────────────────────────── */
+/* ─── toast 容器（按位置修饰类定位） ───────────────────────────
+   基础类 .toast-container 只管布局，位置由 .toast-pos-{x} 决定。
+   位置修饰类：top-left / top-center / top-right
+              middle-left / middle-center / middle-right
+              bottom-left / bottom-center / bottom-right
+   ─────────────────────────── */
 .toast-container {
   position: fixed;
-  top: 16px;
-  right: 16px;
   z-index: 1000;
   display: flex;
-  flex-direction: column;
   gap: 8px;
   pointer-events: none;
 }
+
+/* 顶部：横向排列 */
+.toast-container.toast-pos-top-left,
+.toast-container.toast-pos-top-center,
+.toast-container.toast-pos-top-right {
+  top: 16px;
+  flex-direction: column;
+}
+
+.toast-container.toast-pos-top-left { left: 16px; }
+.toast-container.toast-pos-top-center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+.toast-container.toast-pos-top-right { right: 16px; }
+
+/* 中部：横向排列 */
+.toast-container.toast-pos-middle-left,
+.toast-container.toast-pos-middle-center,
+.toast-container.toast-pos-middle-right {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.toast-container.toast-pos-middle-left {
+  left: 16px;
+  flex-direction: column;
+}
+.toast-container.toast-pos-middle-center {
+  left: 50%;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+}
+.toast-container.toast-pos-middle-right {
+  right: 16px;
+  flex-direction: column;
+}
+
+/* 底部：底部 toast 通常希望新的在最下方，因此用 column-reverse */
+.toast-container.toast-pos-bottom-left,
+.toast-container.toast-pos-bottom-center,
+.toast-container.toast-pos-bottom-right {
+  bottom: 16px;
+  flex-direction: column-reverse;
+}
+
+.toast-container.toast-pos-bottom-left { left: 16px; }
+.toast-container.toast-pos-bottom-center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+.toast-container.toast-pos-bottom-right { right: 16px; }
 
 .toast {
   min-width: 240px;
