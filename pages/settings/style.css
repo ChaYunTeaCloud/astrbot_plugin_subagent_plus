@@ -432,3 +432,18 @@
     padding: 14px 14px 20px;
   }
 }
+
+/* ─── 测试 Tab · JSON 展示（折叠卡片内 pre） ──────────────────────────── */
+.collapse-card pre {
+  margin: 8px 0 0 0;
+  padding: 12px;
+  background: #f7f8fa;
+  border-radius: 6px;
+  font-family: "SF Mono", "Consolas", "Monaco", monospace;
+  font-size: 12px;
+  color: #4e5969;
+  overflow-x: auto;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
    组件库样式 · ui.css
    通用展示组件样式，可跨 Page 复用。
-   与 ui_helpers.js / modal.js / toast.js / tip.js 输出的类名一一对应。
+   与 components.js 输出的类名一一对应。
 
    结构总览（从底到顶）：
      1. 基础层    · 设计 token / 全局 reset / 滚动条
@@ -341,17 +341,6 @@ body {
   font-size: 12px;
 }
 
-/* placeholder（旧式占位，与 emptyState 类似但更简陋） */
-.placeholder {
-  padding: 24px;
-  text-align: center;
-  color: #c9cdd4;
-  background: #f7f8fa;
-  border: 1px dashed #d9dce0;
-  border-radius: 8px;
-  font-size: 13px;
-}
-
 /* ─── collapseCard（可折叠卡片） ─────────────────────────── */
 .collapse-card {
   padding: 0;
@@ -442,21 +431,6 @@ body {
 
 .collapse-card .collapse-card .collapse-body {
   padding: 8px 16px 14px 16px;
-}
-
-/* 折叠卡片内的 pre（测试 Tab 的 JSON 展示场景） */
-.collapse-card pre {
-  margin: 8px 0 0 0;
-  padding: 12px;
-  background: #f7f8fa;
-  border-radius: 6px;
-  font-family: "SF Mono", "Consolas", "Monaco", monospace;
-  font-size: 12px;
-  color: #4e5969;
-  overflow-x: auto;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-all;
 }
 
 
@@ -803,7 +777,7 @@ body {
    6. 有状态组件 · modal
    ═══════════════════════════════════════════════════════════════ */
 
-/* ─── modalCard（带"配置"按钮的卡片触发器） ─────────────────────────── */
+/* ─── modalCard（带触发按钮的卡片） ─────────────────────────── */
 .modal-card {
   padding: 14px 22px;
 }

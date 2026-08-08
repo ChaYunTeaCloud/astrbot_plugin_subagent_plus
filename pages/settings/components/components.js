@@ -227,14 +227,16 @@ const ui = {
    * @param {string} [options.selectAllLabel] - 全选标签，空则不显示全选框
    * @param {Object} [options.itemAttrs] - 透传到每个 item checkbox 的属性
    * @param {Object} [options.selectAllAttrs] - 透传到全选 checkbox 的属性
+   * @param {string} [options.emptyText="暂无可选项"] - 空状态标题
+   * @param {string} [options.emptyDescription] - 空状态描述
    * @returns {string} HTML
    */
-  checkboxList({ items = [], values = [], hint = "", selectAllLabel = "", itemAttrs = {}, selectAllAttrs = {} }) {
+  checkboxList({ items = [], values = [], hint = "", selectAllLabel = "", itemAttrs = {}, selectAllAttrs = {}, emptyText = "暂无可选项", emptyDescription = "当前没有可供选择的候选内容。" }) {
     const cur = new Set(values);
     const normalized = (items || []).map((it) => ({ value: it.value, label: it.label ?? it.value, desc: it.desc }));
     if (!normalized.length) {
       return `<div class="field">
-        ${ui.emptyState({ title: "暂无可选项", description: "当前没有可供选择的候选内容。", compact: true })}
+        ${ui.emptyState({ title: emptyText, description: emptyDescription, compact: true })}
         ${hint ? `<p class="hint">${escapeHtml(hint)}</p>` : ""}
       </div>`;
     }
@@ -266,14 +268,16 @@ const ui = {
    * @param {Object} [options.itemAttrs] - 透传到每个 item checkbox 的属性
    * @param {Object|Function} [options.groupAttrs] - 透传到分组全选 checkbox 的属性；
    *        传函数时签名为 (groupName) => attrs，可按分组生成不同属性
+   * @param {string} [options.emptyText="暂无可选项"] - 空状态标题
+   * @param {string} [options.emptyDescription] - 空状态描述
    * @returns {string} HTML
    */
-  checkboxListGrouped({ groups = {}, values = [], itemAttrs = {}, groupAttrs = {} }) {
+  checkboxListGrouped({ groups = {}, values = [], itemAttrs = {}, groupAttrs = {}, emptyText = "暂无可选项", emptyDescription = "当前没有可供选择的候选内容。" }) {
     const cur = new Set(values);
     const resolveGroupAttrs = typeof groupAttrs === "function" ? groupAttrs : () => groupAttrs;
     const groupedEntries = Object.entries(groups || {});
     if (!groupedEntries.length) {
-      return ui.emptyState({ title: "暂无内置工具数据", description: "当前没有可展示的内置工具分组。", compact: true });
+      return ui.emptyState({ title: emptyText, description: emptyDescription, compact: true });
     }
     return groupedEntries.map(([gname, tools]) => {
       const toolEntries = Object.entries(tools || {});
@@ -381,18 +385,20 @@ const modal = {
   },
 
   /**
-   * 渲染一个带"配置"按钮的卡片，点击按钮打开 modal
-   * @param {string} title - 卡片标题
-   * @param {() => string} contentFn - 返回内容 HTML 的函数（惰性求值）
+   * 渲染一个带触发按钮的卡片，点击按钮打开 modal
+   * @param {Object} options
+   * @param {string} options.title - 卡片标题
+   * @param {() => string} options.contentFn - 返回内容 HTML 的函数（惰性求值）
+   * @param {string} [options.triggerLabel="打开"] - 触发按钮文字
    * @returns {string} HTML 字符串
    */
-  modalCard(title, contentFn) {
+  modalCard({ title, contentFn, triggerLabel = "打开" }) {
     const id = `mc_${++_modalCardSeq}`;
     _modalCardFns[id] = { title, contentFn };
     return `<div class="modal-card">
       <div class="modal-card-hd">
         <h3>${escapeHtml(title)}</h3>
-        <button class="modal-trigger" data-mc="${id}">配置</button>
+        <button class="modal-trigger" data-mc="${id}">${escapeHtml(triggerLabel)}</button>
       </div>
     </div>`;
   },

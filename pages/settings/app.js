@@ -341,7 +341,7 @@ function renderSubAgentCard(name) {
     <div class="subagent-summary">${summary || ui.pill({ text: "尚未配置", variant: "muted" })}</div>
   </div>`;
 
-  const content = buildSubAgentFieldSpecs(name).map(spec => modal.modalCard(spec.label, spec.content)).join("");
+  const content = buildSubAgentFieldSpecs(name).map(spec => modal.modalCard({ title: spec.label, contentFn: spec.content, triggerLabel: "配置" })).join("");
 
   return ui.panel({ children: header + content, className: isRouter ? "card-highlight-purple" : "" });
 }
