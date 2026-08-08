@@ -1,6 +1,7 @@
 // SubAgent Plus · 配置中心前端逻辑
 
-import * as ui from "./components/ui_helpers.js";
+import ui from "./components/ui_helpers.js";
+import { escapeHtml } from "./components/utils.js";
 
 import * as modal from "./components/modal.js";
 import { showToast } from "./components/toast.js";
@@ -265,8 +266,8 @@ function renderConfigOverview() {
     <div class="overview-grid">
       ${overviewItems.map((item) => `
         <div class="overview-card">
-          <div class="overview-label">${ui.escapeHtml(item.label)}</div>
-          <div class="overview-value">${ui.escapeHtml(item.value)}</div>
+          <div class="overview-label">${escapeHtml(item.label)}</div>
+          <div class="overview-value">${escapeHtml(item.value)}</div>
         </div>
       `).join("")}
     </div>
@@ -293,8 +294,8 @@ function renderQuickGuide() {
     <div class="guide-list">
       ${items.map((item) => `
         <div class="guide-item">
-          <div class="guide-item-title">${ui.escapeHtml(item.title)}</div>
-          <div class="guide-item-desc">${ui.escapeHtml(item.desc)}</div>
+          <div class="guide-item-title">${escapeHtml(item.title)}</div>
+          <div class="guide-item-desc">${escapeHtml(item.desc)}</div>
         </div>
       `).join("")}
     </div>
@@ -311,7 +312,7 @@ function renderSubAgentIntro() {
     description: "为每个已注册的 SubAgent 设定可调用的下游代理与可用内置工具。",
     content: `<div class="subagent-intro">
       <div class="subagent-intro-row">
-        <span class="subagent-intro-pill">${ui.escapeHtml(routerHint)}</span>
+        <span class="subagent-intro-pill">${escapeHtml(routerHint)}</span>
         <span class="subagent-intro-pill subagent-intro-pill-muted">${state.data.subAgentNames.length ? `${state.data.subAgentNames.length} 个已注册` : "暂无已注册"}</span>
       </div>
       <div class="subagent-tip">点击卡片里的按钮，可以直接展开"可调用 SubAgent"和"内置工具"列表，快速完成精细化配置。</div>
@@ -340,7 +341,7 @@ function renderSubAgentCard(name) {
   ]);
 
   const header = `<div class="card-title-row">
-    <div class="card-title-main">${ui.escapeHtml(name)}${isRouter ? ui.tag({ text: "路由层", variant: "purple" }) : ""}</div>
+    <div class="card-title-main">${escapeHtml(name)}${isRouter ? ui.tag({ text: "路由层", variant: "purple" }) : ""}</div>
     <div class="subagent-summary">${summary || ui.pill({ text: "尚未配置", variant: "muted" })}</div>
   </div>`;
 
@@ -360,15 +361,15 @@ function renderBasicTab() {
     `<div class="hero-metrics">
       <div class="hero-metric">
         <span class="hero-metric-label">当前路由</span>
-        <strong>${ui.escapeHtml(routerLabel)}</strong>
+        <strong>${escapeHtml(routerLabel)}</strong>
       </div>
       <div class="hero-metric">
         <span class="hero-metric-label">最大嵌套深度</span>
-        <strong>${ui.escapeHtml(get("max_call_subagent_depth"))}</strong>
+        <strong>${escapeHtml(get("max_call_subagent_depth"))}</strong>
       </div>
       <div class="hero-metric">
         <span class="hero-metric-label">已注册</span>
-        <strong>${ui.escapeHtml(state.data.subAgentNames.length || 0)} 个</strong>
+        <strong>${escapeHtml(state.data.subAgentNames.length || 0)} 个</strong>
       </div>
     </div>`,
     renderConfigOverview(),
