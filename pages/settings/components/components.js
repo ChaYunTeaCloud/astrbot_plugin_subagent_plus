@@ -1,28 +1,58 @@
 // ═══════════════════════════════════════════════════════════════
-// 通用 UI 组件库 · 纯展示组件
+// 通用 UI 组件库
+//
+// 组织结构：
+//   ui    · 纯展示组件（无状态，返回 HTML 字符串）
+//   modal · 有状态组件（Modal 弹窗 + 注册表）
+//   toast · 有状态组件（Toast 通知 + 位置缓存）
+//   tip   · 有状态组件（Tip 气泡 + 定时移除）
 //
 // 设计原则：
-// 1. 只负责渲染 HTML 字符串，不关心数据源（调用方传 value）
+// 1. 纯展示组件只负责渲染 HTML 字符串，不关心数据源（调用方传 value）
 // 2. 不硬编码 data-* 协议，通过 attrs 透传，调用方自定义事件绑定
-// 3. 所有组件使用 options 对象传参，避免参数顺序问题
+// 3. 所有展示组件使用 options 对象传参，避免参数顺序问题
 // 4. card 的 title 纯文本自动转义；需要复杂 header 结构时用 panel 自行构造
+// 5. 有状态组件的模块级状态各自独立，互不干扰
 //
 // 依赖：./utils.js（escapeHtml / serializeAttrs）
-// 样式：./ui.css（组件库专用样式，可独立引入）
+// 样式：./ui.css
 //
 // 用法：
-//   import ui from "./components/ui_helpers.js";
+//   import ui, { modal, toast, tip } from "./components/components.js";
 //   ui.card({ title: "示例", content: "..." });
+//   modal.openModal(title, content, { afterRender: [fn] });
+//   toast.show("标题", "正文", "ok");
+//   tip.show(element, "提示文本");
 // ═══════════════════════════════════════════════════════════════
 
 import { escapeHtml, serializeAttrs } from "./utils.js";
 
+// ═══════════════════════════════════════════════════════════════
+// ── ui · 纯展示组件（无状态） ──────────────────────────────────
+// 只负责渲染 HTML 字符串，不关心数据源，不维护任何运行时状态。
+// ═══════════════════════════════════════════════════════════════
 
+/**
+ * 渲染一组 checkbox items（内部辅助函数，不对外暴露）
+ * @param {Array} items - 标准化后的数组，元素为 {value, label, desc?}
+ * @param {Set} cur - 选中的 value 集合
+ * @param {Object} itemAttrs - 透传到每个 item 的属性
+ * @returns {string} HTML
+ */
+function _renderCheckboxItems(items, cur, itemAttrs) {
+  return items.map((it) => `
+    <label class="chklist-item">
+      <input type="checkbox" value="${escapeHtml(it.value)}" ${cur.has(it.value) ? "checked" : ""}${serializeAttrs(itemAttrs)} />
+      <div class="chklist-item-content">
+        <div class="chklist-item-title">${escapeHtml(it.label)}</div>
+        ${it.desc ? `<div class="chklist-item-desc">${escapeHtml(it.desc)}</div>` : ""}
+      </div>
+    </label>
+  `).join("");
+}
 
 const ui = {
-  // ═══════════════════════════════════════════════════════════════
   // ── 容器组件 ──────────────────────────────────────────────────
-  // ═══════════════════════════════════════════════════════════════
 
   /**
    * 网格布局
@@ -123,9 +153,7 @@ const ui = {
     </div>`;
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // ── 表单组件 ──────────────────────────────────────────────────
-  // ═══════════════════════════════════════════════════════════════
 
   /**
    * 数字输入字段
@@ -211,7 +239,7 @@ const ui = {
       </div>`;
     }
     const allChecked = normalized.every((it) => cur.has(it.value));
-    const itemsHtml = renderCheckboxItems(normalized, cur, itemAttrs);
+    const itemsHtml = _renderCheckboxItems(normalized, cur, itemAttrs);
     const selectAllHtml = selectAllLabel ? `
       <label class="chklist-item select-all">
         <input type="checkbox" ${allChecked ? "checked" : ""}${serializeAttrs(selectAllAttrs)} />
@@ -252,7 +280,7 @@ const ui = {
       const items = toolEntries.map(([t, desc]) => ({ value: t, label: t, desc }));
       const allChecked = toolEntries.length > 0 && toolEntries.every(([t]) => cur.has(t));
       const anyChecked = toolEntries.some(([t]) => cur.has(t));
-      const itemsHtml = renderCheckboxItems(items, cur, itemAttrs);
+      const itemsHtml = _renderCheckboxItems(items, cur, itemAttrs);
       return `<div class="chklist-group">
         <div class="chklist-group-hd">
           <label class="chklist-item select-all">
@@ -267,10 +295,8 @@ const ui = {
     }).join("");
   },
 
-  // ═══════════════════════════════════════════════════════════════
   // ── 微组件 · button / badge / tag / pill ──────────────────────
   // 最原子的展示单元，通常被其他组件或业务层组合使用。
-  // ═══════════════════════════════════════════════════════════════
 
   /**
    * 按钮
@@ -323,24 +349,190 @@ const ui = {
   },
 };
 
-export default ui;
+// ═══════════════════════════════════════════════════════════════
+// ── modal · 有状态组件（Modal 弹窗） ───────────────────────────
+// modalCard 返回 HTML 字符串（纯展示），内部用注册表暂存 contentFn；
+// openModal 创建 DOM 并执行副作用（事件绑定、动画、hooks）。
+// 生命周期钩子（afterRender）通过 openModal 参数显式传入，
+// 无隐式时序依赖。
+// ═══════════════════════════════════════════════════════════════
 
+// modalCard 注册表（contentFn 无法通过 HTML 字符串传递，用 ID 映射暂存）
+let _modalCardFns = {};
+let _modalCardSeq = 0;
 
-/**
- * 渲染一组 checkbox items（内部辅助函数，不对外暴露）
- * @param {Array} items - 标准化后的数组，元素为 {value, label, desc?}
- * @param {Set} cur - 选中的 value 集合
- * @param {Object} itemAttrs - 透传到每个 item 的属性
- * @returns {string} HTML
- */
-function renderCheckboxItems(items, cur, itemAttrs) {
-  return items.map((it) => `
-    <label class="chklist-item">
-      <input type="checkbox" value="${escapeHtml(it.value)}" ${cur.has(it.value) ? "checked" : ""}${serializeAttrs(itemAttrs)} />
-      <div class="chklist-item-content">
-        <div class="chklist-item-title">${escapeHtml(it.label)}</div>
-        ${it.desc ? `<div class="chklist-item-desc">${escapeHtml(it.desc)}</div>` : ""}
+const modal = {
+  /**
+   * 清空 modalCard 注册表并移除残留 overlay
+   */
+  clearRegistry() {
+    _modalCardFns = {};
+    _modalCardSeq = 0;
+    document.getElementById("modal-overlay")?.remove();
+  },
+
+  /**
+   * 读取已注册的 modalCard（供点击事件按 ID 查找）
+   * @param {string} id - modalCard 返回的 data-mc 属性值
+   * @returns {{title: string, contentFn: () => string} | undefined}
+   */
+  getCardEntry(id) {
+    return _modalCardFns[id];
+  },
+
+  /**
+   * 渲染一个带"配置"按钮的卡片，点击按钮打开 modal
+   * @param {string} title - 卡片标题
+   * @param {() => string} contentFn - 返回内容 HTML 的函数（惰性求值）
+   * @returns {string} HTML 字符串
+   */
+  modalCard(title, contentFn) {
+    const id = `mc_${++_modalCardSeq}`;
+    _modalCardFns[id] = { title, contentFn };
+    return `<div class="modal-card">
+      <div class="modal-card-hd">
+        <h3>${escapeHtml(title)}</h3>
+        <button class="modal-trigger" data-mc="${id}">配置</button>
       </div>
-    </label>
-  `).join("");
+    </div>`;
+  },
+
+  /**
+   * 打开 modal 弹窗
+   * @param {string} title - 标题
+   * @param {string} content - 已渲染好的 HTML 字符串
+   * @param {Object} [options]
+   * @param {Function | Function[]} [options.afterRender] - 内容注入 Modal DOM 后
+   *        依次执行的钩子，参数为 overlay 元素。可用于同步表单初始值、
+   *        绑定事件、初始化第三方组件等。
+   */
+  openModal(title, content, options = {}) {
+    document.getElementById("modal-overlay")?.remove();
+    const overlay = document.createElement("div");
+    overlay.id = "modal-overlay";
+    overlay.className = "modal-overlay";
+    overlay.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-hd">
+          <h3>${escapeHtml(title)}</h3>
+          <button class="modal-close" aria-label="关闭">×</button>
+        </div>
+        <div class="modal-bd">${content}</div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.offsetHeight; // 强制 reflow，确保 transition 生效
+    overlay.classList.add("show");
+
+    // 执行 afterRender 钩子
+    const rawHooks = options.afterRender || [];
+    const hooks = Array.isArray(rawHooks) ? rawHooks : [rawHooks];
+    for (const hook of hooks) {
+      try {
+        hook(overlay);
+      } catch (err) {
+        console.error("[modal] afterRender hook 执行失败：", err);
+      }
+    }
+
+    // 关闭逻辑
+    const close = () => {
+      overlay.classList.remove("show");
+      setTimeout(() => overlay.remove(), 200);
+      document.removeEventListener("keydown", onKey);
+    };
+    const onKey = (ev) => {
+      if (ev.key === "Escape") close();
+    };
+    overlay.addEventListener("click", (ev) => {
+      if (ev.target === overlay || ev.target.closest(".modal-close")) close();
+    });
+    document.addEventListener("keydown", onKey);
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ── toast · 有状态组件（Toast 通知） ───────────────────────────
+// 管理通知容器（按位置缓存），提供 show API。
+// ═══════════════════════════════════════════════════════════════
+
+// 支持的 9 个位置
+const _toastValidPositions = new Set([
+  "top-left", "top-center", "top-right",
+  "middle-left", "middle-center", "middle-right",
+  "bottom-left", "bottom-center", "bottom-right",
+]);
+
+const _toastDefaultPosition = "top-right";
+
+// 按位置缓存容器，避免同位置重复创建
+const _toastContainers = new Map();
+
+function _ensureToastContainer(position) {
+  const pos = _toastValidPositions.has(position) ? position : _toastDefaultPosition;
+  let container = _toastContainers.get(pos);
+  if (!container || !document.body.contains(container)) {
+    container = document.createElement("div");
+    container.className = `toast-container toast-pos-${pos}`;
+    document.body.appendChild(container);
+    _toastContainers.set(pos, container);
+  }
+  return container;
 }
+
+const toast = {
+  /**
+   * 显示一条 Toast 通知
+   * @param {string} title - 标题
+   * @param {string} [body=""] - 正文（可选）
+   * @param {"error"|"ok"|"warn"|"info"} [type="error"] - 语义类型，决定颜色
+   * @param {number} [duration=4000] - 停留毫秒数
+   * @param {string} [position="top-right"] - 位置，可选值：
+   *   top-left / top-center / top-right
+   *   middle-left / middle-center / middle-right
+   *   bottom-left / bottom-center / bottom-right
+   */
+  show(title, body = "", type = "error", duration = 4000, position = _toastDefaultPosition) {
+    const container = _ensureToastContainer(position);
+    const toastEl = document.createElement("div");
+    toastEl.className = `toast toast-${type}`;
+    toastEl.innerHTML = `<div class="toast-title">${escapeHtml(title)}</div>${body ? `<div class="toast-body">${escapeHtml(body)}</div>` : ""}`;
+    container.appendChild(toastEl);
+    setTimeout(() => {
+      toastEl.classList.add("toast-out");
+      setTimeout(() => toastEl.remove(), 200);
+    }, duration);
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ── tip · 有状态组件（Tip 气泡） ───────────────────────────────
+// 在指定元素下方显示临时提示气泡，自动消失。
+// 同一时间只保留一个气泡。
+// ═══════════════════════════════════════════════════════════════
+
+const _tipSelector = ".field-tip-bubble";
+const _tipDefaultDuration = 2000;
+
+const tip = {
+  /**
+   * 在指定元素下方显示一条临时提示
+   * @param {Element} target - 锚点元素，气泡显示在其下方
+   * @param {string} message - 提示文本（纯文本，自动安全处理）
+   * @param {number} [duration=2000] - 停留毫秒数
+   */
+  show(target, message, duration = _tipDefaultDuration) {
+    document.querySelector(_tipSelector)?.remove();
+    const tipEl = document.createElement("div");
+    tipEl.className = "field-tip-bubble";
+    tipEl.textContent = message; // textContent 自动转义，无需 escapeHtml
+    document.body.appendChild(tipEl);
+    const rect = target.getBoundingClientRect();
+    tipEl.style.left = `${rect.left + window.scrollX}px`;
+    tipEl.style.top = `${rect.bottom + window.scrollY + 6}px`;
+    setTimeout(() => tipEl.remove(), duration);
+  },
+};
+
+export default ui;
+export { modal, toast, tip };

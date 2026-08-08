@@ -1,11 +1,7 @@
 // SubAgent Plus · 配置中心前端逻辑
 
-import ui from "./components/ui_helpers.js";
+import ui, { modal, toast, tip } from "./components/components.js";
 import { escapeHtml } from "./components/utils.js";
-
-import * as modal from "./components/modal.js";
-import { showToast } from "./components/toast.js";
-import { showTip } from "./components/tip.js";
 
 // ═══════════════════════════════════════════════════════════════
 // ── 模块入口 · 常量 ───────────────────────────────────────────
@@ -516,11 +512,11 @@ async function saveConfig() {
       setStatus("保存成功", "ok");
     } else {
       setStatus("保存失败", "err");
-      showToast("保存失败", "服务器返回未成功标识，请检查后端日志");
+      toast.show("保存失败", "服务器返回未成功标识，请检查后端日志");
     }
   } catch (e) {
     setStatus(e.message || "保存失败", "err");
-    showToast("保存失败", e.message || String(e));
+    toast.show("保存失败", e.message || String(e));
     console.error(e);
   } finally {
     state.ui.isSaving = false;
@@ -569,7 +565,7 @@ function handleKeydown(e) {
   if (e.target.dataset?.p === "max_call_subagent_depth") {
     if (e.key.length === 1 && !/[0-9]/.test(e.key)) {
       e.preventDefault();
-      showTip(e.target, "只允许输入 0 或正整数");
+      tip.show(e.target, "只允许输入 0 或正整数");
     }
   }
 }
@@ -586,7 +582,9 @@ function handleBodyClick(e) {
   const modalTrigger = e.target.closest(".modal-trigger");
   if (modalTrigger) {
     const entry = modal.getCardEntry(modalTrigger.dataset.mc);
-    if (entry) modal.openModal(entry.title, entry.contentFn());
+    if (entry) modal.openModal(entry.title, entry.contentFn(), {
+      afterRender: [bindDataP, bindScopeEventHandlers],
+    });
     return;
   }
 
@@ -638,9 +636,6 @@ function registerEvents() {
   setSaveButtonState();
   setStatus("正在加载...", "loading");
 
-  // modal 模块：注入渲染后钩子（具体做什么由业务层自主决定，modal 不假设语义）
-  modal.setup({ hooks: { afterRender: [bindDataP, bindScopeEventHandlers] } });
-
   registerEvents();
 
   await bridge.ready();
@@ -656,7 +651,7 @@ function registerEvents() {
   } catch (e) {
     state.ui.hasLoaded = true;
     setStatus(e.message || "加载失败", "err");
-    showToast("加载失败", e.message || String(e));
+    toast.show("加载失败", e.message || String(e));
     console.error(e);
   } finally {
     state.ui.isLoading = false;
