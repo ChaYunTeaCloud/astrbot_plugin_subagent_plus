@@ -13,9 +13,15 @@ import {
   selectInput,
   checkboxList,
   checkboxListGrouped,
+  button,
+  badge,
+  tag,
+  pill,
 } from "./components/ui_helpers.js";
 
 import * as modal from "./components/modal.js";
+import { showToast } from "./components/toast.js";
+import { showTip } from "./components/tip.js";
 
 // ═══════════════════════════════════════════════════════════════
 // ── 模块入口 · 常量 ───────────────────────────────────────────
@@ -337,7 +343,7 @@ function renderSubAgentIntro() {
 function buildPillSummary(items) {
   return items
     .filter((it) => it.count > 0)
-    .map((it) => `<span class="pill">${escapeHtml(it.label)} ${it.count}</span>`)
+    .map((it) => pill({ text: `${it.label} ${it.count}` }))
     .join("");
 }
 
@@ -351,8 +357,8 @@ function renderSubAgentCard(name) {
   ]);
 
   const header = `<div class="card-title-row">
-    <div class="card-title-main">${escapeHtml(name)}${isRouter ? '<span class="tag tag-purple">路由层</span>' : ""}</div>
-    <div class="subagent-summary">${summary || '<span class="pill pill-muted">尚未配置</span>'}</div>
+    <div class="card-title-main">${escapeHtml(name)}${isRouter ? tag({ text: "路由层", variant: "purple" }) : ""}</div>
+    <div class="subagent-summary">${summary || pill({ text: "尚未配置", variant: "muted" })}</div>
   </div>`;
 
   const content = buildSubAgentFieldSpecs(name).map(spec => modal.modalCard(spec.label, spec.content)).join("");
@@ -444,35 +450,6 @@ function refreshStatus() {
   const changed = state.ui.dirtyCount > 0;
   setStatus(changed ? "配置已修改" : "已加载", changed ? "warn" : "ok");
   setSaveButtonState();
-}
-
-function showTip(el, msg) {
-  document.querySelector(".field-tip-bubble")?.remove();
-  const tip = document.createElement("div");
-  tip.className = "field-tip-bubble";
-  tip.textContent = msg;
-  document.body.appendChild(tip);
-  const rect = el.getBoundingClientRect();
-  tip.style.left = (rect.left + window.scrollX) + "px";
-  tip.style.top = (rect.bottom + window.scrollY + 6) + "px";
-  setTimeout(() => tip.remove(), 2000);
-}
-
-function showToast(title, body = "", type = "error", duration = 4000) {
-  let container = document.querySelector(".toast-container");
-  if (!container) {
-    container = document.createElement("div");
-    container.className = "toast-container";
-    document.body.appendChild(container);
-  }
-  const toast = document.createElement("div");
-  toast.className = `toast toast-${type}`;
-  toast.innerHTML = `<div class="toast-title">${escapeHtml(title)}</div>${body ? `<div class="toast-body">${escapeHtml(body)}</div>` : ""}`;
-  container.appendChild(toast);
-  setTimeout(() => {
-    toast.classList.add("toast-out");
-    setTimeout(() => toast.remove(), 200);
-  }, duration);
 }
 
 // ═══════════════════════════════════════════════════════════════

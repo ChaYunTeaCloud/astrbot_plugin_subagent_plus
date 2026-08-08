@@ -272,3 +272,58 @@ export function checkboxListGrouped({ groups = {}, values = [], itemAttrs = {}, 
     </div>`;
   }).join("");
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ── 微组件 · button / badge / tag / pill ─────────────────────────
+// 这四个是最原子的展示单元，通常被其他组件或业务层组合使用。
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * 按钮
+ * @param {Object} options
+ * @param {string} options.label - 按钮文字
+ * @param {"primary"|"secondary"} [options.variant="primary"] - 样式变体
+ * @param {Object} [options.attrs] - 透传到 <button> 的属性（如 id / data-* / disabled）
+ * @returns {string} HTML
+ */
+export function button({ label, variant = "primary", attrs = {} }) {
+  const cls = variant === "secondary" ? "btn btn-secondary" : "btn";
+  return `<button class="${cls}"${serializeAttrs(attrs)}>${escapeHtml(label)}</button>`;
+}
+
+/**
+ * 徽章（状态标记）
+ * @param {Object} options
+ * @param {string} options.text - 徽章文字
+ * @param {"loading"|"ok"|"warn"|"err"|""} [options.variant=""] - 样式变体
+ * @param {Object} [options.attrs] - 透传属性
+ * @returns {string} HTML
+ */
+export function badge({ text, variant = "", attrs = {} }) {
+  const cls = variant ? `badge ${variant}` : "badge";
+  return `<span class="${cls}"${serializeAttrs(attrs)}>${escapeHtml(text)}</span>`;
+}
+
+/**
+ * 小标签（通常跟在标题后面，如"路由层"标记）
+ * @param {Object} options
+ * @param {string} options.text - 标签文字
+ * @param {"purple"|""} [options.variant=""] - 样式变体
+ * @returns {string} HTML
+ */
+export function tag({ text, variant = "" }) {
+  const cls = variant ? `tag tag-${variant}` : "tag";
+  return `<span class="${cls}">${escapeHtml(text)}</span>`;
+}
+
+/**
+ * 胶囊标签（数量摘要等）
+ * @param {Object} options
+ * @param {string} options.text - 胶囊内容（已包含数量等，由调用方拼好）
+ * @param {"muted"|""} [options.variant=""] - 样式变体
+ * @returns {string} HTML
+ */
+export function pill({ text, variant = "" }) {
+  const cls = variant ? `pill pill-${variant}` : "pill";
+  return `<span class="${cls}">${escapeHtml(text)}</span>`;
+}
