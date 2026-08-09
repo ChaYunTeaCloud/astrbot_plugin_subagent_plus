@@ -234,7 +234,13 @@ function renderSubAgentConfigTab() {
     ].join("");
   }
 
-  return [intro, ui.grid(state.data.subAgentNames.map(renderSubAgentCard))].join("");
+  // 路由层 SubAgent 置顶展示
+  const routerName = getRouterName();
+  const sortedNames = routerName
+    ? [routerName, ...state.data.subAgentNames.filter((n) => n !== routerName)]
+    : state.data.subAgentNames;
+
+  return [intro, ui.grid(sortedNames.map(renderSubAgentCard))].join("");
 }
 
 function renderTestTab() {
