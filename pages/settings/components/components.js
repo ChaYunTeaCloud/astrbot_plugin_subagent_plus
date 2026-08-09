@@ -619,7 +619,8 @@ const toast = {
 // 同一时间只保留一个气泡。
 // ═══════════════════════════════════════════════════════════════
 
-const _tipSelector = ".field-tip-bubble";
+const _tipBubbleClass = "field-tip-bubble";
+const _tipSelector = `.${_tipBubbleClass}`;
 const _tipDefaultDuration = 2000;
 
 const tip = {
@@ -632,7 +633,7 @@ const tip = {
   show(target, message, duration = _tipDefaultDuration) {
     document.querySelector(_tipSelector)?.remove();
     const tipEl = document.createElement("div");
-    tipEl.className = "field-tip-bubble";
+    tipEl.className = _tipBubbleClass;
     tipEl.textContent = message; // textContent 自动转义，无需 escapeHtml
     document.body.appendChild(tipEl);
     const rect = target.getBoundingClientRect();
