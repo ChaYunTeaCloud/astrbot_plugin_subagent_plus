@@ -426,8 +426,7 @@ const ui = {
    * @returns {string} HTML
    */
   badge({ text, variant = "", attrs = {} }) {
-    const cls = variant ? `badge ${variant}` : "badge";
-    return `<span class="${cls}"${serializeAttrs(attrs)}>${escapeHtml(text)}</span>`;
+    return `<span class="${_badgeClass(variant)}"${serializeAttrs(attrs)}>${escapeHtml(text)}</span>`;
   },
 
   /**
@@ -455,6 +454,37 @@ const ui = {
   },
 };
 
+// ── 微组件 · 运行时辅助 ─────────────────────────────────────────
+// badge / collapseCard 的状态更新与交互处理：内部管理各自的类名与
+// DOM 结构，业务层只调用方法、不感知内部实现。
+
+function _badgeClass(variant = "") {
+  return variant ? `badge ${variant}` : "badge";
+}
+
+/**
+ * 更新已渲染的 badge 元素（文本 + 样式变体）
+ * @param {Element} el - badge 元素
+ * @param {string} text - 新文本
+ * @param {string} [variant=""] - 样式变体
+ */
+ui.badge.update = function (el, text, variant = "") {
+  el.textContent = text;
+  el.className = _badgeClass(variant);
+};
+
+/**
+ * 处理折叠卡片头部点击（展开/收起）
+ * @param {Element} target - 实际点击的元素
+ * @returns {boolean} 是否命中折叠头部
+ */
+ui.collapseCard.handleClick = (target) => {
+  const header = target.closest(".collapse-header");
+  if (!header) return false;
+  header.parentElement.classList.toggle("collapsed");
+  return true;
+};
+
 // ═══════════════════════════════════════════════════════════════
 // ── modal · 有状态组件（Modal 弹窗） ───────────────────────────
 // modalCard 返回 HTML 字符串（纯展示），内部用注册表暂存 contentFn；
@@ -478,12 +508,15 @@ const modal = {
   },
 
   /**
-   * 读取已注册的 modalCard（供点击事件按 ID 查找）
-   * @param {string} id - modalCard 返回的 data-mc 属性值
-   * @returns {{title: string, contentFn: () => string} | undefined}
+   * 处理 modalCard 触发按钮的点击：定位触发按钮并读取注册表
+   * @param {Element} target - 实际点击的元素
+   * @returns {{title: string, content: string}|null} 可直接用于 openModal 的内容载荷；未命中返回 null
    */
-  getCardEntry(id) {
-    return _modalCardFns[id];
+  handleTriggerClick(target) {
+    const trigger = target.closest(".modal-trigger");
+    if (!trigger) return null;
+    const entry = _modalCardFns[trigger.dataset.mc];
+    return entry ? { title: entry.title, content: entry.contentFn() } : null;
   },
 
   /**

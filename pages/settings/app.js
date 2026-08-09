@@ -261,8 +261,7 @@ const tabRenderers = {
 // ═══════════════════════════════════════════════════════════════
 
 function setStatus(text, cls) {
-  els.status.textContent = text;
-  els.status.className = `badge ${cls}`;
+  ui.badge.update(els.status, text, cls);
 }
 
 // 更新保存按钮状态
@@ -398,24 +397,17 @@ function handleKeydown(e) {
  */
 function handleBodyClick(e) {
   // ── 折叠卡片 ──
-  const collapseHeader = e.target.closest(".collapse-header");
-  if (collapseHeader) {
-    collapseHeader.parentElement.classList.toggle("collapsed");
-    return;
-  }
+  if (ui.collapseCard.handleClick(e.target)) return;
 
   // ── Modal 配置按钮 ──
-  const modalTrigger = e.target.closest(".modal-trigger");
-  if (modalTrigger) {
-    const entry = modal.getCardEntry(modalTrigger.dataset.mc);
-    if (entry) {
-      modal.openModal(entry.title, entry.contentFn(), {
-        afterRender: [
-          (root) => ui.chklist.applyIndeterminate(root),
-          (root) => bindScopeEventHandlers(root),
-        ],
-      });
-    }
+  const modalPayload = modal.handleTriggerClick(e.target);
+  if (modalPayload) {
+    modal.openModal(modalPayload.title, modalPayload.content, {
+      afterRender: [
+        (root) => ui.chklist.applyIndeterminate(root),
+        (root) => bindScopeEventHandlers(root),
+      ],
+    });
     return;
   }
 

@@ -184,22 +184,13 @@
     // ── 渲染 ────────────────────────────────────────────────────
     app.innerHTML = basicDemo + formDemo + statefulDemo;
 
-    // ── 折叠卡片交互 ────────────────────────────────────────────
+    // ── 折叠 / Modal 交互（模拟业务层：只调用组件库 API） ──────
     app.addEventListener("click", (e) => {
-      const collapseHeader = e.target.closest(".collapse-header");
-      if (collapseHeader) {
-        collapseHeader.parentElement.classList.toggle("collapsed");
-        return;
-      }
-    });
+      if (ui.collapseCard.handleClick(e.target)) return;
 
-    // ── Modal 交互 ──────────────────────────────────────────────
-    app.addEventListener("click", (e) => {
-      const trigger = e.target.closest(".modal-trigger");
-      if (!trigger) return;
-      const entry = modal.getCardEntry(trigger.dataset.mc);
-      if (!entry) return;
-      modal.openModal(entry.title, entry.contentFn(), {
+      const payload = modal.handleTriggerClick(e.target);
+      if (!payload) return;
+      modal.openModal(payload.title, payload.content, {
         afterRender: (overlay) => {
           ui.chklist.applyIndeterminate(overlay);
           overlay.addEventListener("input", (ev) => {
