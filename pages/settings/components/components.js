@@ -41,11 +41,11 @@ import { escapeHtml, serializeAttrs } from "./utils.js";
  */
 function _renderCheckboxItems(items, cur, itemAttrs) {
   return items.map((it) => `
-    <label class="chklist-item">
+    <label class="tea-chklist-item">
       <input type="checkbox" value="${escapeHtml(it.value)}" ${cur.has(it.value) ? "checked" : ""}${serializeAttrs(itemAttrs)} />
-      <div class="chklist-item-content">
-        <div class="chklist-item-title">${escapeHtml(it.label)}</div>
-        ${it.desc ? `<div class="chklist-item-desc">${escapeHtml(it.desc)}</div>` : ""}
+      <div class="tea-chklist-item-content">
+        <div class="tea-chklist-item-title">${escapeHtml(it.label)}</div>
+        ${it.desc ? `<div class="tea-chklist-item-desc">${escapeHtml(it.desc)}</div>` : ""}
       </div>
     </label>
   `).join("");
@@ -59,7 +59,7 @@ const ui = {
    * @param {string[]} items - 每个 item 的 HTML 字符串
    */
   grid(items = []) {
-    return `<div class="grid-layout">${items.map((item) => `<div class="grid-item">${item}</div>`).join("")}</div>`;
+    return `<div class="tea-grid-layout">${items.map((item) => `<div class="tea-grid-item">${item}</div>`).join("")}</div>`;
   },
 
   /**
@@ -67,8 +67,8 @@ const ui = {
    * @param {{label: string, value: string}[]} items
    */
   stat(items = []) {
-    return `<div class="stat-grid">${items.map((item) =>
-      `<div class="stat"><div class="stat-label">${escapeHtml(item.label)}</div><div class="stat-value">${escapeHtml(item.value)}</div></div>`
+    return `<div class="tea-stat-grid">${items.map((item) =>
+      `<div class="tea-stat"><div class="tea-stat-label">${escapeHtml(item.label)}</div><div class="tea-stat-value">${escapeHtml(item.value)}</div></div>`
     ).join("")}</div>`;
   },
 
@@ -80,9 +80,9 @@ const ui = {
    * @param {boolean} [options.compact=false] - 紧凑模式
    */
   emptyState({ title, description = "", compact = false }) {
-    return `<div class="empty-state${compact ? " compact" : ""}">
-      <div class="empty-state-title">${escapeHtml(title)}</div>
-      ${description ? `<div class="empty-state-desc">${escapeHtml(description)}</div>` : ""}
+    return `<div class="tea-empty-state${compact ? " tea-empty-state-compact" : ""}">
+      <div class="tea-empty-state-title">${escapeHtml(title)}</div>
+      ${description ? `<div class="tea-empty-state-desc">${escapeHtml(description)}</div>` : ""}
     </div>`;
   },
 
@@ -95,14 +95,14 @@ const ui = {
    * @returns {string} HTML
    */
   sectionCard({ title, description = "", content }) {
-    return `<div class="section-card">
-      <div class="section-card-hd">
+    return `<div class="tea-section-card">
+      <div class="tea-section-card-hd">
         <div>
           <h3>${escapeHtml(title)}</h3>
-          ${description ? `<p class="section-desc">${escapeHtml(description)}</p>` : ""}
+          ${description ? `<p class="tea-section-desc">${escapeHtml(description)}</p>` : ""}
         </div>
       </div>
-      <div class="section-card-bd">${content}</div>
+      <div class="tea-section-card-bd">${content}</div>
     </div>`;
   },
 
@@ -116,8 +116,8 @@ const ui = {
    * @returns {string} HTML
    */
   card({ title = "", content = "", show = true, className = "" }) {
-    const classes = ["card"];
-    if (show === false) classes.push("hidden");
+    const classes = ["tea-card"];
+    if (show === false) classes.push("tea-hidden");
     if (className) classes.push(className);
     return `<div class="${classes.join(" ")}">
       <h3>${escapeHtml(title)}</h3>
@@ -138,7 +138,7 @@ const ui = {
    * @returns {string} HTML
    */
   panel({ children = "", className = "" }) {
-    const classes = ["card"];
+    const classes = ["tea-card"];
     if (className) classes.push(className);
     return `<div class="${classes.join(" ")}">${children}</div>`;
   },
@@ -152,12 +152,12 @@ const ui = {
    * @returns {string} HTML
    */
   collapseCard({ title, content, expanded = false }) {
-    return `<div class="card collapse-card${expanded ? "" : " collapsed"}">
-      <div class="collapse-header">
+    return `<div class="tea-card tea-collapse-card${expanded ? "" : " tea-collapsed"}">
+      <div class="tea-collapse-header">
         <h3>${escapeHtml(title)}</h3>
-        <span class="collapse-arrow">▾</span>
+        <span class="tea-collapse-arrow">▾</span>
       </div>
-      <div class="collapse-body">${content}</div>
+      <div class="tea-collapse-body">${content}</div>
     </div>`;
   },
 
@@ -173,10 +173,10 @@ const ui = {
    * @returns {string} HTML
    */
   numberInput({ label, value = 0, hint = "", attrs = {} }) {
-    return `<div class="field">
+    return `<div class="tea-field">
       <label>${escapeHtml(label)}</label>
       <input type="number" value="${escapeHtml(value)}"${serializeAttrs(attrs)}/>
-      ${hint ? `<p class="hint">${escapeHtml(hint)}</p>` : ""}
+      ${hint ? `<p class="tea-hint">${escapeHtml(hint)}</p>` : ""}
     </div>`;
   },
 
@@ -190,12 +190,12 @@ const ui = {
    * @returns {string} HTML
    */
   checkboxInput({ label, checked = false, hint = "", attrs = {} }) {
-    return `<div class="field">
-      <label class="chk-label">
+    return `<div class="tea-field">
+      <label class="tea-chk-label">
         <input type="checkbox" ${checked ? "checked" : ""}${serializeAttrs(attrs)} />
         ${escapeHtml(label)}
       </label>
-      ${hint ? `<p class="hint">${escapeHtml(hint)}</p>` : ""}
+      ${hint ? `<p class="tea-hint">${escapeHtml(hint)}</p>` : ""}
     </div>`;
   },
 
@@ -219,10 +219,10 @@ const ui = {
     const selectHtml = normalized.length
       ? `<select${serializeAttrs(attrs)}>${opts}</select>`
       : `<select disabled${serializeAttrs(attrs)}><option value="">暂无可选项</option></select>`;
-    return `<div class="field">
+    return `<div class="tea-field">
       <label>${escapeHtml(label)}</label>
       ${selectHtml}
-      ${hint ? `<p class="hint">${escapeHtml(hint)}</p>` : ""}
+      ${hint ? `<p class="tea-hint">${escapeHtml(hint)}</p>` : ""}
     </div>`;
   },
 
@@ -247,9 +247,9 @@ const ui = {
     const cur = new Set(values);
     const normalized = (items || []).map((it) => ({ value: it.value, label: it.label ?? it.value, desc: it.desc }));
     if (!normalized.length) {
-      return `<div class="field">
+      return `<div class="tea-field">
         ${ui.emptyState({ title: emptyText, description: emptyDescription, compact: true })}
-        ${hint ? `<p class="hint">${escapeHtml(hint)}</p>` : ""}
+        ${hint ? `<p class="tea-hint">${escapeHtml(hint)}</p>` : ""}
       </div>`;
     }
     // name 存在时自动生成列表绑定契约（data-name），无需调用方手动传入
@@ -258,20 +258,20 @@ const ui = {
     const allChecked = normalized.every((it) => cur.has(it.value));
     const itemsHtml = _renderCheckboxItems(normalized, cur, listItemAttrs);
     const selectAllHtml = selectAllLabel ? `
-      <label class="chklist-item select-all">
+      <label class="tea-chklist-item tea-select-all">
         <input type="checkbox" ${allChecked ? "checked" : ""}${serializeAttrs(listSelectAllAttrs)} />
-        <div class="chklist-item-content">
-          <div class="chklist-item-title">${escapeHtml(selectAllLabel)}</div>
+        <div class="tea-chklist-item-content">
+          <div class="tea-chklist-item-title">${escapeHtml(selectAllLabel)}</div>
         </div>
       </label>
-      <div class="chklist-sep"></div>
+      <div class="tea-chklist-sep"></div>
     ` : "";
-    return `<div class="field">
-      <div class="chklist">
+    return `<div class="tea-field">
+      <div class="tea-chklist">
         ${selectAllHtml}
         ${itemsHtml}
       </div>
-      ${hint ? `<p class="hint">${escapeHtml(hint)}</p>` : ""}
+      ${hint ? `<p class="tea-hint">${escapeHtml(hint)}</p>` : ""}
     </div>`;
   },
 
@@ -310,16 +310,16 @@ const ui = {
       const allChecked = groupEntries.length > 0 && groupEntries.every(([t]) => cur.has(t));
       const anyChecked = groupEntries.some(([t]) => cur.has(t));
       const itemsHtml = _renderCheckboxItems(items, cur, listItemAttrs);
-      return `<div class="chklist-group">
-        <div class="chklist-group-hd">
-          <label class="chklist-item select-all">
+      return `<div class="tea-chklist-group">
+        <div class="tea-chklist-group-hd">
+          <label class="tea-chklist-item tea-select-all">
             <input type="checkbox" ${allChecked ? "checked" : ""} ${anyChecked && !allChecked ? 'data-indeterminate="true"' : ""}${serializeAttrs(resolveListGroupAttrs(gname))} />
-            <div class="chklist-item-content">
-              <div class="chklist-item-title">${escapeHtml(gname)}</div>
+            <div class="tea-chklist-item-content">
+              <div class="tea-chklist-item-title">${escapeHtml(gname)}</div>
             </div>
           </label>
         </div>
-        <div class="chklist-group-bd">${itemsHtml}</div>
+        <div class="tea-chklist-group-bd">${itemsHtml}</div>
       </div>`;
     }).join("");
   },
@@ -328,7 +328,7 @@ const ui = {
   // checkboxList / checkboxListGrouped 渲染后，由业务层在事件委托中
   // 调用 handleChange 完成全选联动、半选态同步与选中值收集。
   // 列表项与全选按钮统一用 data-name 归组，角色通过组件自身的
-  // DOM 结构（.select-all 等）区分，业务层无需感知任何内部契约。
+  // DOM 结构（.tea-select-all 等）区分，业务层无需感知任何内部契约。
 
   chklist: {
     /**
@@ -344,11 +344,11 @@ const ui = {
     handleChange({ root, target }) {
       const name = target.dataset.name;
       if (!name) return null;
-      if (target.closest(".select-all")) {
+      if (target.closest(".tea-select-all")) {
         this.applySelectAll({ target, checked: target.checked });
       }
       const values = [...root.querySelectorAll(`input[data-name="${name}"]`)]
-        .filter((el) => !el.closest(".select-all") && el.checked)
+        .filter((el) => !el.closest(".tea-select-all") && el.checked)
         .map((el) => el.value);
       this.syncSelectAll({ root, name });
       return { name, values };
@@ -362,10 +362,10 @@ const ui = {
      * @param {boolean} options.checked - 目标状态
      */
     applySelectAll({ target, checked }) {
-      const container = target.closest(".chklist-group") || target.closest(".chklist");
+      const container = target.closest(".tea-chklist-group") || target.closest(".tea-chklist");
       if (!container) return;
       container.querySelectorAll("input[type='checkbox']").forEach((el) => {
-        if (!el.closest(".select-all")) el.checked = checked;
+        if (!el.closest(".tea-select-all")) el.checked = checked;
       });
     },
 
@@ -383,11 +383,11 @@ const ui = {
         el.indeterminate = checked > 0 && checked < total;
       };
       root.querySelectorAll(`input[data-name="${name}"]`).forEach((el) => {
-        if (!el.closest(".select-all")) return;
-        const container = el.closest(".chklist-group") || el.closest(".chklist");
+        if (!el.closest(".tea-select-all")) return;
+        const container = el.closest(".tea-chklist-group") || el.closest(".tea-chklist");
         if (!container) return;
         const items = [...container.querySelectorAll(`input[data-name="${name}"]`)]
-          .filter((i) => !i.closest(".select-all"));
+          .filter((i) => !i.closest(".tea-select-all"));
         syncCheckbox(el, items.length, items.filter((i) => i.checked).length);
       });
     },
@@ -413,7 +413,7 @@ const ui = {
    * @returns {string} HTML
    */
   button({ label, variant = "primary", attrs = {} }) {
-    const cls = variant === "secondary" ? "btn btn-secondary" : "btn";
+    const cls = variant === "secondary" ? "tea-btn tea-btn-secondary" : "tea-btn";
     return `<button class="${cls}"${serializeAttrs(attrs)}>${escapeHtml(label)}</button>`;
   },
 
@@ -437,7 +437,7 @@ const ui = {
    * @returns {string} HTML
    */
   tag({ text, variant = "" }) {
-    const cls = variant ? `tag tag-${variant}` : "tag";
+    const cls = variant ? `tea-tag tea-tag-${variant}` : "tea-tag";
     return `<span class="${cls}">${escapeHtml(text)}</span>`;
   },
 
@@ -449,7 +449,7 @@ const ui = {
    * @returns {string} HTML
    */
   pill({ text, variant = "" }) {
-    const cls = variant ? `pill pill-${variant}` : "pill";
+    const cls = variant ? `tea-pill tea-pill-${variant}` : "tea-pill";
     return `<span class="${cls}">${escapeHtml(text)}</span>`;
   },
 };
@@ -459,7 +459,7 @@ const ui = {
 // DOM 结构，业务层只调用方法、不感知内部实现。
 
 function _badgeClass(variant = "") {
-  return variant ? `badge ${variant}` : "badge";
+  return variant ? `tea-badge tea-badge-${variant}` : "tea-badge";
 }
 
 /**
@@ -479,9 +479,9 @@ ui.badge.update = function (el, text, variant = "") {
  * @returns {boolean} 是否命中折叠头部
  */
 ui.collapseCard.handleClick = (target) => {
-  const header = target.closest(".collapse-header");
+  const header = target.closest(".tea-collapse-header");
   if (!header) return false;
-  header.parentElement.classList.toggle("collapsed");
+  header.parentElement.classList.toggle("tea-collapsed");
   return true;
 };
 
@@ -504,7 +504,7 @@ const modal = {
   clearRegistry() {
     _modalCardFns = {};
     _modalCardSeq = 0;
-    document.getElementById("modal-overlay")?.remove();
+    document.getElementById("tea-modal-overlay")?.remove();
   },
 
   /**
@@ -513,7 +513,7 @@ const modal = {
    * @returns {{title: string, content: string}|null} 可直接用于 openModal 的内容载荷；未命中返回 null
    */
   handleTriggerClick(target) {
-    const trigger = target.closest(".modal-trigger");
+    const trigger = target.closest(".tea-modal-trigger");
     if (!trigger) return null;
     const entry = _modalCardFns[trigger.dataset.mc];
     return entry ? { title: entry.title, content: entry.contentFn() } : null;
@@ -530,10 +530,10 @@ const modal = {
   modalCard({ title, contentFn, triggerLabel = "打开" }) {
     const id = `mc_${++_modalCardSeq}`;
     _modalCardFns[id] = { title, contentFn };
-    return `<div class="modal-card">
-      <div class="modal-card-hd">
+    return `<div class="tea-modal-card">
+      <div class="tea-modal-card-hd">
         <h3>${escapeHtml(title)}</h3>
-        <button class="modal-trigger" data-mc="${id}">${escapeHtml(triggerLabel)}</button>
+        <button class="tea-modal-trigger" data-mc="${id}">${escapeHtml(triggerLabel)}</button>
       </div>
     </div>`;
   },
@@ -548,22 +548,22 @@ const modal = {
    *        绑定事件、初始化第三方组件等。
    */
   openModal(title, content, options = {}) {
-    document.getElementById("modal-overlay")?.remove();
+    document.getElementById("tea-modal-overlay")?.remove();
     const overlay = document.createElement("div");
-    overlay.id = "modal-overlay";
-    overlay.className = "modal-overlay";
+    overlay.id = "tea-modal-overlay";
+    overlay.className = "tea-modal-overlay";
     overlay.innerHTML = `
-      <div class="modal" role="dialog" aria-modal="true">
-        <div class="modal-hd">
+      <div class="tea-modal" role="dialog" aria-modal="true">
+        <div class="tea-modal-hd">
           <h3>${escapeHtml(title)}</h3>
-          <button class="modal-close" aria-label="关闭">×</button>
+          <button class="tea-modal-close" aria-label="关闭">×</button>
         </div>
-        <div class="modal-bd">${content}</div>
+        <div class="tea-modal-bd">${content}</div>
       </div>
     `;
     document.body.appendChild(overlay);
+    overlay.classList.add("tea-show");
     overlay.offsetHeight; // 强制 reflow，确保 transition 生效
-    overlay.classList.add("show");
 
     // 执行 afterRender 钩子
     const rawHooks = options.afterRender || [];
@@ -578,7 +578,7 @@ const modal = {
 
     // 关闭逻辑
     const close = () => {
-      overlay.classList.remove("show");
+      overlay.classList.remove("tea-show");
       setTimeout(() => overlay.remove(), 200);
       document.removeEventListener("keydown", onKey);
     };
@@ -586,7 +586,7 @@ const modal = {
       if (ev.key === "Escape") close();
     };
     overlay.addEventListener("click", (ev) => {
-      if (ev.target === overlay || ev.target.closest(".modal-close")) close();
+      if (ev.target === overlay || ev.target.closest(".tea-modal-close")) close();
     });
     document.addEventListener("keydown", onKey);
   },
@@ -614,7 +614,7 @@ function _ensureToastContainer(position) {
   let container = _toastContainers.get(pos);
   if (!container || !document.body.contains(container)) {
     container = document.createElement("div");
-    container.className = `toast-container toast-pos-${pos}`;
+    container.className = `tea-toast-container tea-toast-pos-${pos}`;
     document.body.appendChild(container);
     _toastContainers.set(pos, container);
   }
@@ -636,11 +636,11 @@ const toast = {
   show(title, body = "", type = "error", duration = 4000, position = _toastDefaultPosition) {
     const container = _ensureToastContainer(position);
     const toastEl = document.createElement("div");
-    toastEl.className = `toast toast-${type}`;
-    toastEl.innerHTML = `<div class="toast-title">${escapeHtml(title)}</div>${body ? `<div class="toast-body">${escapeHtml(body)}</div>` : ""}`;
+    toastEl.className = `tea-toast tea-toast-${type}`;
+    toastEl.innerHTML = `<div class="tea-toast-title">${escapeHtml(title)}</div>${body ? `<div class="tea-toast-body">${escapeHtml(body)}</div>` : ""}`;
     container.appendChild(toastEl);
     setTimeout(() => {
-      toastEl.classList.add("toast-out");
+      toastEl.classList.add("tea-toast-out");
       setTimeout(() => toastEl.remove(), 200);
     }, duration);
   },
@@ -652,7 +652,7 @@ const toast = {
 // 同一时间只保留一个气泡。
 // ═══════════════════════════════════════════════════════════════
 
-const _tipBubbleClass = "field-tip-bubble";
+const _tipBubbleClass = "tea-field-tip-bubble";
 const _tipSelector = `.${_tipBubbleClass}`;
 const _tipDefaultDuration = 2000;
 

@@ -15,7 +15,7 @@
     /* 组件实例标识：虚线框 + 组件名标签 */
     .demo-item { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 10px; background: #fafbfc; }
     .demo-tag { display: inline-block; font-family: "Consolas", monospace; font-size: 11px; color: #4f46e5; background: #eef0ff; padding: 2px 8px; border-radius: 4px; margin-bottom: 8px; }
-    .demo-body .card, .demo-body .section-card { margin-bottom: 0; }
+    .demo-body .tea-card, .demo-body .tea-section-card { margin-bottom: 0; }
     .demo-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
 
     .test-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; align-items: start; }
@@ -174,9 +174,9 @@
           ${demo("toast.show · 两种类型", `
             <div class="demo-row">
               ${ui.button({ label: "Toast 成功", attrs: { id: "btn-toast-ok" } })}
-              ${ui.button({ label: "Toast 错误", attrs: { id: "btn-toast-err", class: "btn-secondary" } })}
+              ${ui.button({ label: "Toast 错误", attrs: { id: "btn-toast-err", class: "tea-btn-secondary" } })}
             </div>`)}
-          ${demo("tip.show", ui.button({ label: "显示 Tip", attrs: { id: "btn-tip", class: "btn-secondary" } }))}
+          ${demo("tip.show", ui.button({ label: "显示 Tip", attrs: { id: "btn-tip", class: "tea-btn-secondary" } }))}
         </div>
         <div class="mt"><pre id="modal-output" class="output-panel">打开弹窗后勾选选项，这里显示弹窗内的 handleChange 数据</pre></div>`,
     });

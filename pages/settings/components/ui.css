@@ -19,14 +19,14 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  --color-primary: #165dff;
-  --color-primary-2: #3f7fff;
-  --color-bg: #f5f7fb;
-  --color-surface: #ffffff;
-  --color-border: #eceef2;
-  --color-muted: #7a8596;
-  --color-text: #1f2329;
-  --color-soft: #f4f6f9;
+  --tea-color-primary: #165dff;
+  --tea-color-primary-2: #3f7fff;
+  --tea-color-bg: #f5f7fb;
+  --tea-color-surface: #ffffff;
+  --tea-color-border: #eceef2;
+  --tea-color-muted: #7a8596;
+  --tea-color-text: #1f2329;
+  --tea-color-soft: #f4f6f9;
 }
 
 * {
@@ -40,8 +40,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Microsoft YaHei", sans-serif;
   font-size: 14px;
-  color: var(--color-text);
-  background: var(--color-bg);
+  color: var(--tea-color-text);
+  background: var(--tea-color-bg);
   scroll-behavior: smooth;
 }
 
@@ -73,12 +73,12 @@ body {
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── button ─────────────────────────── */
-.btn {
+.tea-btn {
   padding: 7px 16px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-2) 100%);
-  color: var(--color-surface);
+  background: linear-gradient(135deg, var(--tea-color-primary) 0%, var(--tea-color-primary-2) 100%);
+  color: var(--tea-color-surface);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -86,38 +86,38 @@ body {
   box-shadow: 0 2px 6px rgba(22, 93, 255, 0.16);
 }
 
-.btn:hover:not(:disabled) {
+.tea-btn:hover:not(:disabled) {
   background: #1451d8;
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(22, 93, 255, 0.2);
 }
 
-.btn:active:not(:disabled) {
+.tea-btn:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.btn:disabled {
+.tea-btn:disabled {
   background: #a5b3c5;
   cursor: not-allowed;
   box-shadow: none;
   opacity: 0.7;
 }
 
-.btn-secondary {
-  background: var(--color-soft);
+.tea-btn-secondary {
+  background: var(--tea-color-soft);
   color: #4e5969;
   box-shadow: none;
   border: 1px solid #e3e8ef;
 }
 
-.btn-secondary:hover:not(:disabled) {
+.tea-btn-secondary:hover:not(:disabled) {
   background: #e5e6eb;
   color: #1d2129;
   box-shadow: none;
 }
 
 /* ─── badge ─────────────────────────── */
-.badge {
+.tea-badge {
   flex: 0 0 auto;
   padding: 3px 10px;
   border-radius: 999px;
@@ -128,29 +128,29 @@ body {
   letter-spacing: 0.1px;
 }
 
-.badge.loading {
+.tea-badge.tea-badge-loading {
   background: #eef4ff;
   color: #165dff;
   border-color: #d8e6ff;
 }
 
-.badge.warn {
+.tea-badge.tea-badge-warn {
   background: #fff7e0;
   color: #d4a017;
 }
 
-.badge.ok {
+.tea-badge.tea-badge-ok {
   background: #e8f5e9;
   color: #2e7d32;
 }
 
-.badge.err {
+.tea-badge.tea-badge-err {
   background: #ffebee;
   color: #c62828;
 }
 
 /* ─── tag（标题后的小标记） ─────────────────────────── */
-.tag {
+.tea-tag {
   display: inline-block;
   margin-left: 8px;
   padding: 1px 8px;
@@ -161,14 +161,14 @@ body {
   letter-spacing: 0.3px;
 }
 
-.tag-purple {
+.tea-tag-purple {
   color: #7c3aed;
   background: #f3e8ff;
   border: 1px solid #d8b4fe;
 }
 
 /* ─── pill（数量摘要胶囊） ─────────────────────────── */
-.pill {
+.tea-pill {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
@@ -180,7 +180,7 @@ body {
   border: 1px solid #cfe0ff;
 }
 
-.pill-muted {
+.tea-pill-muted {
   background: #f2f3f5;
   color: #4e5969;
   border-color: #e5e6eb;
@@ -192,7 +192,7 @@ body {
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── card / panel 共用基础类 ─────────────────────────── */
-.card {
+.tea-card {
   background: #fff;
   border: 1px solid #eceef2;
   border-left: 2px solid transparent;
@@ -203,20 +203,20 @@ body {
   transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease, border-left-color 0.2s ease;
 }
 
-.card:hover {
+.tea-card:hover {
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);
   border-color: #dfe3ea;
   border-left-color: #165dff;
   transform: translateY(-1px);
 }
 
-.card:has(input:focus),
-.card:has(select:focus) {
+.tea-card:has(input:focus),
+.tea-card:has(select:focus) {
   border-color: #cfe0ff;
   box-shadow: 0 4px 12px rgba(22, 93, 255, 0.08);
 }
 
-.card h3 {
+.tea-card h3 {
   margin: 0 0 10px 0;
   font-size: 14px;
   font-weight: 600;
@@ -224,14 +224,14 @@ body {
   letter-spacing: 0.2px;
 }
 
-.card.hidden {
+.tea-card.tea-hidden {
   display: none;
 }
 
-/* panel 复用 .card 外观，无额外样式（children 自由构造） */
+/* panel 复用 .tea-card 外观，无额外样式（children 自由构造） */
 
 /* ─── sectionCard（带标题栏的区块卡片） ─────────────────────────── */
-.section-card {
+.tea-section-card {
   background: #fff;
   border: 1px solid #eceef2;
   border-radius: 10px;
@@ -241,14 +241,14 @@ body {
   overflow: hidden;
 }
 
-.section-card-hd {
+.tea-section-card-hd {
   padding: 12px 14px 9px 14px;
   border-bottom: 1px solid #f4f5f7;
   background: linear-gradient(180deg, #fcfcfd 0%, #fff 100%);
   position: relative;
 }
 
-.section-card-hd::before {
+.tea-section-card-hd::before {
   content: "";
   position: absolute;
   left: 8px;
@@ -261,11 +261,11 @@ body {
   transition: opacity 0.2s ease;
 }
 
-.section-card:hover .section-card-hd::before {
+.tea-section-card:hover .tea-section-card-hd::before {
   opacity: 1;
 }
 
-.section-card-hd h3 {
+.tea-section-card-hd h3 {
   padding-left: 8px;
   margin: 0 0 4px 0;
   font-size: 14px;
@@ -273,47 +273,47 @@ body {
   color: #1d2129;
 }
 
-.section-desc {
+.tea-section-desc {
   margin: 0;
   color: #86909c;
   font-size: 12px;
   line-height: 1.6;
 }
 
-.section-card-bd {
+.tea-section-card-bd {
   padding: 10px 14px 14px 14px;
 }
 
-.section-card-bd > .card:first-child {
+.tea-section-card-bd > .tea-card:first-child {
   margin-top: 0;
 }
 
 /* ─── grid（网格布局容器） ─────────────────────────── */
-.grid-layout {
+.tea-grid-layout {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   width: 100%;
 }
 
-.grid-item {
+.tea-grid-item {
   flex: 0 0 260px;
   min-width: 0;
 }
 
-.grid-item > .card {
+.tea-grid-item > .tea-card {
   margin-bottom: 0;
 }
 
 /* ─── stat（指标卡网格） ─────────────────────────── */
-.stat-grid {
+.tea-stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 8px;
   margin-bottom: 12px;
 }
 
-.stat {
+.tea-stat {
   background: #fbfcfe;
   border: 1px solid #eceef2;
   border-left: 2px solid #dce7f8;
@@ -321,13 +321,13 @@ body {
   padding: 10px 12px;
 }
 
-.stat-label {
+.tea-stat-label {
   font-size: 12px;
   color: #86909c;
   margin-bottom: 4px;
 }
 
-.stat-value {
+.tea-stat-value {
   font-size: 15px;
   font-weight: 600;
   color: #1d2129;
@@ -335,7 +335,7 @@ body {
 }
 
 /* ─── emptyState（空状态） ─────────────────────────── */
-.empty-state {
+.tea-empty-state {
   padding: 24px 20px;
   border: 1px dashed #d9dce0;
   border-radius: 10px;
@@ -344,46 +344,46 @@ body {
   color: #4e5969;
 }
 
-.empty-state:hover {
+.tea-empty-state:hover {
   border-color: #c7d0db;
 }
 
-.empty-state-title {
+.tea-empty-state-title {
   font-size: 14px;
   font-weight: 600;
   color: #1d2129;
   margin-bottom: 6px;
 }
 
-.empty-state-desc {
+.tea-empty-state-desc {
   font-size: 13px;
   color: #86909c;
   line-height: 1.6;
 }
 
-.empty-state.compact {
+.tea-empty-state.tea-empty-state-compact {
   padding: 16px 18px;
   border-style: dashed;
   background: #fcfcfd;
 }
 
-.empty-state.compact .empty-state-title {
+.tea-empty-state.tea-empty-state-compact .tea-empty-state-title {
   font-size: 13px;
   margin-bottom: 4px;
 }
 
-.empty-state.compact .empty-state-desc {
+.tea-empty-state.tea-empty-state-compact .tea-empty-state-desc {
   font-size: 12px;
 }
 
 /* ─── collapseCard（可折叠卡片） ─────────────────────────── */
-.collapse-card {
+.tea-collapse-card {
   padding: 0;
   overflow: hidden;
   position: relative;
 }
 
-.collapse-card::before {
+.tea-collapse-card::before {
   content: "";
   position: absolute;
   left: 0;
@@ -395,15 +395,15 @@ body {
   transition: opacity 0.2s;
 }
 
-.collapse-card:hover::before {
+.tea-collapse-card:hover::before {
   opacity: 1;
 }
 
-.collapse-card.collapsed:hover::before {
+.tea-collapse-card.tea-collapsed:hover::before {
   opacity: 0.6;
 }
 
-.collapse-header {
+.tea-collapse-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -413,58 +413,58 @@ body {
   transition: background 0.15s;
 }
 
-.collapse-header:hover {
+.tea-collapse-header:hover {
   background: #f8f9fb;
 }
 
-.collapse-header h3 {
+.tea-collapse-header h3 {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
   color: #1d2129;
 }
 
-.collapse-arrow {
+.tea-collapse-arrow {
   font-size: 12px;
   color: #86909c;
   transition: transform 0.2s;
   display: inline-block;
 }
 
-.collapse-card.collapsed .collapse-arrow {
+.tea-collapse-card.tea-collapsed .tea-collapse-arrow {
   transform: rotate(-90deg);
 }
 
-.collapse-body {
+.tea-collapse-body {
   padding: 4px 22px 18px 22px;
   border-top: 1px solid #f0f1f3;
 }
 
-.collapse-card.collapsed .collapse-body {
+.tea-collapse-card.tea-collapsed .tea-collapse-body {
   display: none;
 }
 
 /* 嵌套折叠卡片 */
-.collapse-card .collapse-card {
+.tea-collapse-card .tea-collapse-card {
   border: 1px solid #ebedf0;
   background: #fafbfc;
   margin-bottom: 12px;
 }
 
-.collapse-card .collapse-card:last-child {
+.tea-collapse-card .tea-collapse-card:last-child {
   margin-bottom: 0;
 }
 
-.collapse-card .collapse-card .collapse-header {
+.tea-collapse-card .tea-collapse-card .tea-collapse-header {
   padding: 12px 16px;
 }
 
-.collapse-card .collapse-card .collapse-header h3 {
+.tea-collapse-card .tea-collapse-card .tea-collapse-header h3 {
   font-size: 13px;
   color: #4e5969;
 }
 
-.collapse-card .collapse-card .collapse-body {
+.tea-collapse-card .tea-collapse-card .tea-collapse-body {
   padding: 8px 16px 14px 16px;
 }
 
@@ -475,26 +475,26 @@ body {
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── field（字段容器，所有表单控件共用） ─────────────────────────── */
-.field {
+.tea-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-bottom: 14px;
 }
 
-.field:last-child {
+.tea-field:last-child {
   margin-bottom: 0;
 }
 
-.field label {
+.tea-field label {
   font-size: 13px;
   font-weight: 500;
   color: #1f2329;
 }
 
-.field input[type="number"],
-.field input[type="text"],
-.field select {
+.tea-field input[type="number"],
+.tea-field input[type="text"],
+.tea-field select {
   padding: 8px 12px;
   border: 1px solid #d9dce0;
   border-radius: 8px;
@@ -504,37 +504,37 @@ body {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.field input[type="number"] {
+.tea-field input[type="number"] {
   width: 140px;
 }
 
-.field input[type="text"],
-.field select {
+.tea-field input[type="text"],
+.tea-field select {
   width: 100%;
   max-width: 360px;
 }
 
-.field input[type="text"]:focus,
-.field input[type="number"]:focus,
-.field select:focus {
+.tea-field input[type="text"]:focus,
+.tea-field input[type="number"]:focus,
+.tea-field select:focus {
   outline: none;
   border-color: #165dff;
   box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.12);
 }
 
-.field input[type="number"]:hover,
-.field input[type="text"]:hover,
-.field select:hover {
+.tea-field input[type="number"]:hover,
+.tea-field input[type="text"]:hover,
+.tea-field select:hover {
   border-color: #c1c8d2;
 }
 
-.field input[type="number"]:hover:not(:focus),
-.field input[type="text"]:hover:not(:focus),
-.field select:hover:not(:focus) {
+.tea-field input[type="number"]:hover:not(:focus),
+.tea-field input[type="text"]:hover:not(:focus),
+.tea-field select:hover:not(:focus) {
   border-color: #b8bcc4;
 }
 
-.field .chk-label {
+.tea-field .tea-chk-label {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -544,25 +544,25 @@ body {
   padding: 6px 0;
 }
 
-.field .chk-label input[type="checkbox"] {
+.tea-field .tea-chk-label input[type="checkbox"] {
   width: 16px;
   height: 16px;
   accent-color: #165dff;
   cursor: pointer;
 }
 
-.field .hint {
+.tea-field .tea-hint {
   margin: 0;
 }
 
 /* ─── chklist（复选框列表） ─────────────────────────── */
-.chklist {
+.tea-chklist {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.chklist-item {
+.tea-chklist-item {
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -573,29 +573,29 @@ body {
   transition: background 0.12s ease, transform 0.12s ease;
 }
 
-.chklist-item:hover {
+.tea-chklist-item:hover {
   background: #f7f8fa;
   transform: translateX(1px);
 }
 
-.chklist-item input[type="checkbox"] {
+.tea-chklist-item input[type="checkbox"] {
   margin-top: 3px;
   flex-shrink: 0;
   accent-color: #165dff;
 }
 
-.chklist-item-content {
+.tea-chklist-item-content {
   flex: 1;
   min-width: 0;
 }
 
-.chklist-item-title {
+.tea-chklist-item-title {
   font-size: 13px;
   font-weight: 500;
   color: #1d2129;
 }
 
-.chklist-item-desc {
+.tea-chklist-item-desc {
   font-size: 12px;
   color: #86909c;
   margin-top: 2px;
@@ -608,23 +608,23 @@ body {
   -webkit-box-orient: vertical;
 }
 
-.chklist-item.select-all .chklist-item-title {
+.tea-chklist-item.tea-select-all .tea-chklist-item-title {
   font-weight: 600;
   color: #4e5969;
 }
 
-.chklist-sep {
+.tea-chklist-sep {
   height: 1px;
   background: #e5e6eb;
   margin: 4px 0;
 }
 
 /* ─── chklistGrouped（分组复选框列表） ─────────────────────────── */
-.chklist-group + .chklist-group {
+.tea-chklist-group + .tea-chklist-group {
   margin-top: 10px;
 }
 
-.chklist-group-hd {
+.tea-chklist-group-hd {
   padding: 4px 6px;
   background: #f7f8fa;
   border-radius: 6px 6px 0 0;
@@ -632,15 +632,15 @@ body {
   border-bottom: none;
 }
 
-.chklist-group-hd .chklist-item {
+.tea-chklist-group-hd .tea-chklist-item {
   padding: 4px 6px;
 }
 
-.chklist-group-hd .chklist-item:hover {
+.tea-chklist-group-hd .tea-chklist-item:hover {
   background: transparent;
 }
 
-.chklist-group-hd .chklist-item-title {
+.tea-chklist-group-hd .tea-chklist-item-title {
   font-size: 12px;
   font-weight: 600;
   color: #4e5969;
@@ -648,7 +648,7 @@ body {
   letter-spacing: 0.3px;
 }
 
-.chklist-group-bd {
+.tea-chklist-group-bd {
   padding: 4px 6px 6px 6px;
   border: 1px solid #e5e6eb;
   border-top: none;
@@ -665,12 +665,12 @@ body {
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── toast 容器（按位置修饰类定位） ───────────────────────────
-   基础类 .toast-container 只管布局，位置由 .toast-pos-{x} 决定。
+   基础类 .tea-toast-container 只管布局，位置由 .tea-toast-pos-{x} 决定。
    位置修饰类：top-left / top-center / top-right
               middle-left / middle-center / middle-right
               bottom-left / bottom-center / bottom-right
    ─────────────────────────── */
-.toast-container {
+.tea-toast-container {
   position: fixed;
   z-index: 1000;
   display: flex;
@@ -679,63 +679,63 @@ body {
 }
 
 /* 顶部：横向排列 */
-.toast-container.toast-pos-top-left,
-.toast-container.toast-pos-top-center,
-.toast-container.toast-pos-top-right {
+.tea-toast-container.tea-toast-pos-top-left,
+.tea-toast-container.tea-toast-pos-top-center,
+.tea-toast-container.tea-toast-pos-top-right {
   top: 16px;
   flex-direction: column;
 }
 
-.toast-container.toast-pos-top-left { left: 16px; }
-.toast-container.toast-pos-top-center {
+.tea-toast-container.tea-toast-pos-top-left { left: 16px; }
+.tea-toast-container.tea-toast-pos-top-center {
   left: 50%;
   transform: translateX(-50%);
 }
-.toast-container.toast-pos-top-right { right: 16px; }
+.tea-toast-container.tea-toast-pos-top-right { right: 16px; }
 
 /* 中部：横向排列 */
-.toast-container.toast-pos-middle-left,
-.toast-container.toast-pos-middle-center,
-.toast-container.toast-pos-middle-right {
+.tea-toast-container.tea-toast-pos-middle-left,
+.tea-toast-container.tea-toast-pos-middle-center,
+.tea-toast-container.tea-toast-pos-middle-right {
   top: 50%;
   transform: translateY(-50%);
 }
 
-.toast-container.toast-pos-middle-left {
+.tea-toast-container.tea-toast-pos-middle-left {
   left: 16px;
   flex-direction: column;
 }
-.toast-container.toast-pos-middle-center {
+.tea-toast-container.tea-toast-pos-middle-center {
   left: 50%;
   transform: translate(-50%, -50%);
   flex-direction: column;
 }
-.toast-container.toast-pos-middle-right {
+.tea-toast-container.tea-toast-pos-middle-right {
   right: 16px;
   flex-direction: column;
 }
 
 /* 底部：底部 toast 通常希望新的在最下方，因此用 column-reverse */
-.toast-container.toast-pos-bottom-left,
-.toast-container.toast-pos-bottom-center,
-.toast-container.toast-pos-bottom-right {
+.tea-toast-container.tea-toast-pos-bottom-left,
+.tea-toast-container.tea-toast-pos-bottom-center,
+.tea-toast-container.tea-toast-pos-bottom-right {
   bottom: 16px;
   flex-direction: column-reverse;
 }
 
-.toast-container.toast-pos-bottom-left { left: 16px; }
-.toast-container.toast-pos-bottom-center {
+.tea-toast-container.tea-toast-pos-bottom-left { left: 16px; }
+.tea-toast-container.tea-toast-pos-bottom-center {
   left: 50%;
   transform: translateX(-50%);
 }
-.toast-container.toast-pos-bottom-right { right: 16px; }
+.tea-toast-container.tea-toast-pos-bottom-right { right: 16px; }
 
-.toast {
+.tea-toast {
   min-width: 240px;
   max-width: 420px;
   padding: 10px 14px;
   background: #fff;
-  border-left: 3px solid var(--color-primary);
+  border-left: 3px solid var(--tea-color-primary);
   border-radius: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   font-size: 13px;
@@ -744,50 +744,50 @@ body {
   animation: toastSlideIn 0.2s ease-out;
 }
 
-.toast.toast-ok {
+.tea-toast.tea-toast-ok {
   border-left-color: #16a34a;
 }
 
-.toast.toast-ok .toast-title {
+.tea-toast.tea-toast-ok .tea-toast-title {
   color: #16a34a;
 }
 
-.toast.toast-warn {
+.tea-toast.tea-toast-warn {
   border-left-color: #d97706;
 }
 
-.toast.toast-warn .toast-title {
+.tea-toast.tea-toast-warn .tea-toast-title {
   color: #d97706;
 }
 
-.toast.toast-info {
+.tea-toast.tea-toast-info {
   border-left-color: #0284c7;
 }
 
-.toast.toast-info .toast-title {
+.tea-toast.tea-toast-info .tea-toast-title {
   color: #0284c7;
 }
 
-.toast.toast-error {
+.tea-toast.tea-toast-error {
   border-left-color: #e5413e;
 }
 
-.toast.toast-error .toast-title {
+.tea-toast.tea-toast-error .tea-toast-title {
   color: #e5413e;
 }
 
-.toast-title {
+.tea-toast-title {
   font-weight: 600;
   margin-bottom: 4px;
 }
 
-.toast-body {
-  color: var(--color-muted);
+.tea-toast-body {
+  color: var(--tea-color-muted);
   word-break: break-word;
   white-space: pre-wrap;
 }
 
-.toast.toast-out {
+.tea-toast.tea-toast-out {
   animation: toastSlideOut 0.2s ease-in forwards;
 }
 
@@ -802,7 +802,7 @@ body {
 }
 
 /* ─── tipBubble（字段下方的临时提示气泡） ─────────────────────────── */
-.field-tip-bubble {
+.tea-field-tip-bubble {
   position: absolute;
   padding: 6px 12px;
   background: #ffebee;
@@ -816,7 +816,7 @@ body {
   animation: tipFadeIn 0.15s ease-out;
 }
 
-.field-tip-bubble::before {
+.tea-field-tip-bubble::before {
   content: "";
   position: absolute;
   top: -4px;
@@ -837,24 +837,24 @@ body {
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── modalCard（带触发按钮的卡片） ─────────────────────────── */
-.modal-card {
+.tea-modal-card {
   padding: 14px 22px;
 }
 
-.modal-card-hd {
+.tea-modal-card-hd {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.modal-card-hd h3 {
+.tea-modal-card-hd h3 {
   margin: 0;
   flex: 1;
   min-width: 0;
 }
 
-.modal-trigger {
+.tea-modal-trigger {
   flex-shrink: 0;
   padding: 6px 12px;
   border: 1px solid #165dff;
@@ -867,14 +867,14 @@ body {
   transition: all 0.15s ease;
 }
 
-.modal-trigger:hover {
+.tea-modal-trigger:hover {
   background: #165dff;
   color: #fff;
   box-shadow: 0 2px 6px rgba(22, 93, 255, 0.14);
 }
 
 /* ─── modal（弹窗本体） ─────────────────────────── */
-.modal-overlay {
+.tea-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -889,11 +889,11 @@ body {
   transition: opacity 0.2s ease-out;
 }
 
-.modal-overlay.show {
+.tea-modal-overlay.tea-show {
   opacity: 1;
 }
 
-.modal {
+.tea-modal {
   background: #fff;
   border-radius: 12px;
   border: 1px solid #e6ebf4;
@@ -908,11 +908,11 @@ body {
   overflow: hidden;
 }
 
-.modal-overlay.show .modal {
+.tea-modal-overlay.tea-show .tea-modal {
   transform: translateY(0) scale(1);
 }
 
-.modal-hd {
+.tea-modal-hd {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -921,14 +921,14 @@ body {
   flex-shrink: 0;
 }
 
-.modal-hd h3 {
+.tea-modal-hd h3 {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
   color: #1d2129;
 }
 
-.modal-close {
+.tea-modal-close {
   width: 28px;
   height: 28px;
   border: none;
@@ -944,43 +944,43 @@ body {
   justify-content: center;
 }
 
-.modal-close:hover {
+.tea-modal-close:hover {
   background: #f2f3f5;
   color: #1d2129;
 }
 
-.modal-bd {
+.tea-modal-bd {
   padding: 20px 24px 24px 24px;
   overflow-y: auto;
   flex: 1;
 }
 
 /* Modal 内嵌套组件的间距调整 */
-.modal-bd .collapse-card {
+.tea-modal-bd .tea-collapse-card {
   margin-bottom: 12px;
 }
 
-.modal-bd .collapse-card:last-child {
+.tea-modal-bd .tea-collapse-card:last-child {
   margin-bottom: 0;
 }
 
-.modal-bd .field:last-child {
+.tea-modal-bd .tea-field:last-child {
   margin-bottom: 0;
 }
 
-.modal-bd::-webkit-scrollbar {
+.tea-modal-bd::-webkit-scrollbar {
   width: 8px;
 }
 
-.modal-bd::-webkit-scrollbar-track {
+.tea-modal-bd::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.modal-bd::-webkit-scrollbar-thumb {
+.tea-modal-bd::-webkit-scrollbar-thumb {
   background: #d9dce0;
   border-radius: 4px;
 }
 
-.modal-bd::-webkit-scrollbar-thumb:hover {
+.tea-modal-bd::-webkit-scrollbar-thumb:hover {
   background: #b8bcc4;
 }
