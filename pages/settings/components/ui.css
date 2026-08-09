@@ -251,12 +251,18 @@ body {
 .section-card-hd::before {
   content: "";
   position: absolute;
-  left: 16px;
+  left: 8px;
   top: 14px;
   bottom: 10px;
   width: 2px;
   border-radius: 999px;
   background: linear-gradient(180deg, #165dff 0%, #7ba8ff 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.section-card:hover .section-card-hd::before {
+  opacity: 1;
 }
 
 .section-card-hd h3 {
@@ -736,6 +742,30 @@ body {
   line-height: 1.5;
   pointer-events: auto;
   animation: toastSlideIn 0.2s ease-out;
+}
+
+.toast.toast-ok {
+  border-left-color: #16a34a;
+}
+
+.toast.toast-ok .toast-title {
+  color: #16a34a;
+}
+
+.toast.toast-warn {
+  border-left-color: #d97706;
+}
+
+.toast.toast-warn .toast-title {
+  color: #d97706;
+}
+
+.toast.toast-info {
+  border-left-color: #0284c7;
+}
+
+.toast.toast-info .toast-title {
+  color: #0284c7;
 }
 
 .toast.toast-error {

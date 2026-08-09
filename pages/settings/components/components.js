@@ -57,7 +57,6 @@ const ui = {
   /**
    * 网格布局
    * @param {string[]} items - 每个 item 的 HTML 字符串
-   * @returns {string} HTML
    */
   grid(items = []) {
     return `<div class="grid-layout">${items.map((item) => `<div class="grid-item">${item}</div>`).join("")}</div>`;
@@ -66,7 +65,6 @@ const ui = {
   /**
    * 指标卡网格（自适应排列的 label + value 卡片组）
    * @param {{label: string, value: string}[]} items
-   * @returns {string} HTML
    */
   stat(items = []) {
     return `<div class="stat-grid">${items.map((item) =>
@@ -80,7 +78,6 @@ const ui = {
    * @param {string} options.title - 标题
    * @param {string} [options.description] - 描述
    * @param {boolean} [options.compact=false] - 紧凑模式
-   * @returns {string} HTML
    */
   emptyState({ title, description = "", compact = false }) {
     return `<div class="empty-state${compact ? " compact" : ""}">
@@ -236,13 +233,15 @@ const ui = {
    * @param {Array} [options.values=[]] - 选中的 value 数组
    * @param {string} [options.hint] - 提示
    * @param {string} [options.selectAllLabel] - 全选标签，空则不显示全选框
-   * @param {Object} [options.itemAttrs] - 透传到每个 item checkbox 的属性
-   * @param {Object} [options.selectAllAttrs] - 透传到全选 checkbox 的属性
+   * @param {string} [options.name] - 列表绑定标识；传入时自动生成 data-name，
+   *        使列表项与全选按钮归入同一组并通过 ui.chklist 联动（同一列表内必须一致）
+   * @param {Object} [options.itemAttrs] - 透传到每个 item checkbox 的额外属性
+   * @param {Object} [options.selectAllAttrs] - 透传到全选 checkbox 的额外属性
    * @param {string} [options.emptyText="暂无可选项"] - 空状态标题
    * @param {string} [options.emptyDescription] - 空状态描述
    * @returns {string} HTML
    */
-  checkboxList({ items = [], values = [], hint = "", selectAllLabel = "", itemAttrs = {}, selectAllAttrs = {}, emptyText = "暂无可选项", emptyDescription = "当前没有可供选择的候选内容。" }) {
+  checkboxList({ items = [], values = [], hint = "", selectAllLabel = "", name = "", itemAttrs = {}, selectAllAttrs = {}, emptyText = "暂无可选项", emptyDescription = "当前没有可供选择的候选内容。" }) {
     const cur = new Set(values);
     const normalized = (items || []).map((it) => ({ value: it.value, label: it.label ?? it.value, desc: it.desc }));
     if (!normalized.length) {
@@ -251,11 +250,14 @@ const ui = {
         ${hint ? `<p class="hint">${escapeHtml(hint)}</p>` : ""}
       </div>`;
     }
+    // name 存在时自动生成列表绑定契约（data-name），无需调用方手动传入
+    const listItemAttrs = name ? { "data-name": name, ...itemAttrs } : itemAttrs;
+    const listSelectAllAttrs = name ? { "data-name": name, ...selectAllAttrs } : selectAllAttrs;
     const allChecked = normalized.every((it) => cur.has(it.value));
-    const itemsHtml = _renderCheckboxItems(normalized, cur, itemAttrs);
+    const itemsHtml = _renderCheckboxItems(normalized, cur, listItemAttrs);
     const selectAllHtml = selectAllLabel ? `
       <label class="chklist-item select-all">
-        <input type="checkbox" ${allChecked ? "checked" : ""}${serializeAttrs(selectAllAttrs)} />
+        <input type="checkbox" ${allChecked ? "checked" : ""}${serializeAttrs(listSelectAllAttrs)} />
         <div class="chklist-item-content">
           <div class="chklist-item-title">${escapeHtml(selectAllLabel)}</div>
         </div>
@@ -276,30 +278,38 @@ const ui = {
    * @param {Object} options
    * @param {Object} [options.groups] - 分组对象 { groupName: { itemValue: itemDesc, ... } }
    * @param {Array} [options.values=[]] - 选中的 value 数组
-   * @param {Object} [options.itemAttrs] - 透传到每个 item checkbox 的属性
-   * @param {Object|Function} [options.groupAttrs] - 透传到分组全选 checkbox 的属性；
+   * @param {string} [options.name] - 列表绑定标识；传入时自动生成 data-name，
+   *        使列表项与分组全选按钮归入同一组并通过 ui.chklist 联动（同一列表内必须一致）
+   * @param {Object} [options.itemAttrs] - 透传到每个 item checkbox 的额外属性
+   * @param {Object|Function} [options.groupAttrs] - 透传到分组全选 checkbox 的额外属性；
    *        传函数时签名为 (groupName) => attrs，可按分组生成不同属性
    * @param {string} [options.emptyText="暂无可选项"] - 空状态标题
    * @param {string} [options.emptyDescription] - 空状态描述
    * @returns {string} HTML
    */
-  checkboxListGrouped({ groups = {}, values = [], itemAttrs = {}, groupAttrs = {}, emptyText = "暂无可选项", emptyDescription = "当前没有可供选择的候选内容。" }) {
+  checkboxListGrouped({ groups = {}, values = [], name = "", itemAttrs = {}, groupAttrs = {}, emptyText = "暂无可选项", emptyDescription = "当前没有可供选择的候选内容。" }) {
     const cur = new Set(values);
     const resolveGroupAttrs = typeof groupAttrs === "function" ? groupAttrs : () => groupAttrs;
     const groupedEntries = Object.entries(groups || {});
     if (!groupedEntries.length) {
       return ui.emptyState({ title: emptyText, description: emptyDescription, compact: true });
     }
-    return groupedEntries.map(([gname, tools]) => {
-      const toolEntries = Object.entries(tools || {});
-      const items = toolEntries.map(([t, desc]) => ({ value: t, label: t, desc }));
-      const allChecked = toolEntries.length > 0 && toolEntries.every(([t]) => cur.has(t));
-      const anyChecked = toolEntries.some(([t]) => cur.has(t));
-      const itemsHtml = _renderCheckboxItems(items, cur, itemAttrs);
+    // name 存在时自动生成列表绑定契约（data-name），无需调用方手动传入
+    const listItemAttrs = name ? { "data-name": name, ...itemAttrs } : itemAttrs;
+    const resolveListGroupAttrs = (gname) => {
+      const attrs = resolveGroupAttrs(gname);
+      return name ? { "data-name": name, ...attrs } : attrs;
+    };
+    return groupedEntries.map(([gname, entries]) => {
+      const groupEntries = Object.entries(entries || {});
+      const items = groupEntries.map(([t, desc]) => ({ value: t, label: t, desc }));
+      const allChecked = groupEntries.length > 0 && groupEntries.every(([t]) => cur.has(t));
+      const anyChecked = groupEntries.some(([t]) => cur.has(t));
+      const itemsHtml = _renderCheckboxItems(items, cur, listItemAttrs);
       return `<div class="chklist-group">
         <div class="chklist-group-hd">
           <label class="chklist-item select-all">
-            <input type="checkbox" ${allChecked ? "checked" : ""} ${anyChecked && !allChecked ? 'data-indeterminate="true"' : ""}${serializeAttrs(resolveGroupAttrs(gname))} />
+            <input type="checkbox" ${allChecked ? "checked" : ""} ${anyChecked && !allChecked ? 'data-indeterminate="true"' : ""}${serializeAttrs(resolveListGroupAttrs(gname))} />
             <div class="chklist-item-content">
               <div class="chklist-item-title">${escapeHtml(gname)}</div>
             </div>
@@ -308,6 +318,81 @@ const ui = {
         <div class="chklist-group-bd">${itemsHtml}</div>
       </div>`;
     }).join("");
+  },
+
+  // ── 表单组件 · 复选框列表运行时辅助 ───────────────────────────
+  // checkboxList / checkboxListGrouped 渲染后，由业务层在事件委托中
+  // 调用 handleChange 完成全选联动、半选态同步与选中值收集。
+  // 列表项与全选按钮统一用 data-name 归组，角色通过组件自身的
+  // DOM 结构（.select-all 等）区分，业务层无需感知任何内部契约。
+
+  chklist: {
+    /**
+     * 复选框列表变更统一入口
+     * 处理全选联动 → 收集选中值 → 同步全选按钮状态
+     * @param {Object} options
+     * @param {Element} options.root - 事件委托根元素（app 或 modal overlay）
+     * @param {Element} options.target - 触发事件的 checkbox
+     * @returns {{name: string, values: string[]}|null} 绑定的列表名与选中值；非列表控件返回 null
+     */
+    handleChange({ root, target }) {
+      const name = target.dataset.name;
+      if (!name) return null;
+      if (target.closest(".select-all")) {
+        this.applySelectAll({ target, checked: target.checked });
+      }
+      const values = [...root.querySelectorAll(`input[data-name="${name}"]`)]
+        .filter((el) => !el.closest(".select-all") && el.checked)
+        .map((el) => el.value);
+      this.syncSelectAll({ root, name });
+      return { name, values };
+    },
+
+    /**
+     * 全选/取消全选：把同组所有列表项设为统一状态（不包含全选按钮自身）
+     * 范围限定为触发按钮所在容器（.chklist-group / .chklist），避免跨组误操作
+     * @param {Object} options
+     * @param {Element} options.target - 触发的全选按钮
+     * @param {boolean} options.checked - 目标状态
+     */
+    applySelectAll({ target, checked }) {
+      const container = target.closest(".chklist-group") || target.closest(".chklist");
+      if (!container) return;
+      container.querySelectorAll("input[type='checkbox']").forEach((el) => {
+        if (!el.closest(".select-all")) el.checked = checked;
+      });
+    },
+
+    /**
+     * 同步全选按钮状态：全选 / 半选（indeterminate）/ 全不选
+     * 通过 data-name 找到全选按钮，再依据其所在容器（.chklist-group / .chklist）
+     * 内的列表项选中情况更新自身状态
+     * @param {Object} options
+     * @param {Element} options.root - 事件委托根元素（app 或 modal overlay）
+     * @param {string} options.name - 列表绑定名
+     */
+    syncSelectAll({ root, name }) {
+      const syncCheckbox = (el, total, checked) => {
+        el.checked = total > 0 && checked === total;
+        el.indeterminate = checked > 0 && checked < total;
+      };
+      root.querySelectorAll(`input[data-name="${name}"]`).forEach((el) => {
+        if (!el.closest(".select-all")) return;
+        const container = el.closest(".chklist-group") || el.closest(".chklist");
+        if (!container) return;
+        const items = [...container.querySelectorAll(`input[data-name="${name}"]`)]
+          .filter((i) => !i.closest(".select-all"));
+        syncCheckbox(el, items.length, items.filter((i) => i.checked).length);
+      });
+    },
+
+    /**
+     * 渲染后应用半选态（data-indeterminate="true" 的选项框）
+     * @param {Element} root - 渲染容器
+     */
+    applyIndeterminate(root) {
+      root.querySelectorAll("input[data-indeterminate='true']").forEach((el) => (el.indeterminate = true));
+    },
   },
 
   // ── 微组件 · button / badge / tag / pill ──────────────────────
@@ -340,7 +425,7 @@ const ui = {
   },
 
   /**
-   * 小标签（通常跟在标题后面，如"路由层"标记）
+   * 小标签（通常跟在标题后面，如"荐"字标记）
    * @param {Object} options
    * @param {string} options.text - 标签文字
    * @param {"purple"|""} [options.variant=""] - 样式变体

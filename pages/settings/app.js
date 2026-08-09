@@ -9,12 +9,11 @@ import ui, { modal, toast, tip } from "./components/components.js";
 const bridge = window.AstrBotPluginPage;
 
 const els = {
-  app: document.getElementById("app"),
-  body: document.getElementById("body"),
-  tabs: document.getElementById("tabs"),
-  status: document.getElementById("status"),
-  btnSave: document.getElementById("btn-save"),
-  btnReset: document.getElementById("btn-reset"),
+  app: document.getElementById("app"),  // 应用容器
+  body: document.getElementById("body"),  // 主体容器
+  tabs: document.getElementById("tabs"),    // 选项卡容器
+  status: document.getElementById("status"),  // 状态容器
+  btnSave: document.getElementById("btn-save"),  // 保存按钮
 };
 
 const api = {
@@ -157,21 +156,19 @@ function renderSubAgentCard(name) {
       title: "可调 SubAgent",
       triggerLabel: "配置",
       contentFn: () => ui.checkboxList({
+        name: `${base}.callable_subagents`,
         items: callableOptions,
         values: get(`${base}.callable_subagents`) ?? [],
         selectAllLabel: "全选",
-        itemAttrs: { "data-list": `${base}.callable_subagents` },
-        selectAllAttrs: { "data-selectall": `${base}.callable_subagents` },
       }),
     }),
     modal.modalCard({
       title: "内置工具",
       triggerLabel: "配置",
       contentFn: () => ui.checkboxListGrouped({
+        name: `${base}.builtin_tools`,
         groups: state.data.builtinToolsInfo.groups || {},
         values: get(`${base}.builtin_tools`) ?? [],
-        itemAttrs: { "data-list": `${base}.builtin_tools` },
-        groupAttrs: (gname) => ({ "data-selectall-group": `${base}.builtin_tools`, "data-group": gname }),
       }),
     }),
   ].join("");
@@ -268,41 +265,17 @@ function setStatus(text, cls) {
   els.status.className = `badge ${cls}`;
 }
 
-// 更新保存/撤销按钮状态
+// 更新保存按钮状态
 function setSaveButtonState() {
   const ready = state.ui.hasLoaded && !state.ui.isLoading;
   const dirty = hasConfigChanged();
   els.btnSave.disabled = !ready || !dirty || state.ui.isSaving;
   els.btnSave.textContent = state.ui.isSaving ? "保存中..." : "保存配置项";
-  els.btnReset.disabled = !ready || !dirty;
 }
 
 function refreshStatus() {
   setStatus(hasConfigChanged() ? "配置已修改" : "已加载", hasConfigChanged() ? "warn" : "ok");
   setSaveButtonState();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ── UI 组件 · 全选同步 ────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════
-
-function syncSelectAll(path, root) {
-  const syncCheckbox = (el, total, checked) => {
-    el.checked = total > 0 && checked === total;
-    el.indeterminate = checked > 0 && checked < total;
-  };
-  const items = [...root.querySelectorAll(`input[data-list="${path}"]`)];
-  const sa = root.querySelector(`input[data-selectall="${path}"]`);
-  if (sa) syncCheckbox(sa, items.length, items.filter((el) => el.checked).length);
-
-  root.querySelectorAll(`input[data-selectall-group="${path}"]`).forEach((g) => {
-    const gItems = [...g.closest(".chklist-group").querySelectorAll(`input[data-list="${path}"]`)];
-    syncCheckbox(g, gItems.length, gItems.filter((el) => el.checked).length);
-  });
-}
-
-function applyIndeterminate(root) {
-  root.querySelectorAll("input[data-indeterminate='true']").forEach((el) => (el.indeterminate = true));
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -320,7 +293,7 @@ function updateTabsUI(tabName) {
 
 function renderBody(tabName) {
   els.body.innerHTML = tabRenderers[tabName]();
-  applyIndeterminate(els.body);
+  ui.chklist.applyIndeterminate(els.body);
 }
 
 function switchTab(name) {
@@ -332,9 +305,12 @@ function switchTab(name) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ── 业务操作 · 保存 / 撤销 ───────────────────────────────────
+// ── 业务操作 · 保存 ─────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * 保存配置项到服务器
+ */
 async function saveConfig() {
   if (state.ui.isSaving || state.ui.isLoading || !hasConfigChanged()) return;
 
@@ -361,28 +337,24 @@ async function saveConfig() {
   }
 }
 
-function resetConfigToSaved() {
-  if (state.ui.isSaving || state.ui.isLoading || !state.ui.hasLoaded) return;
-  replaceConfigState(state.data.savedConfig);
-  refreshStatus();
-  switchTab(state.ui.currentTabName);
-}
-
 // ═══════════════════════════════════════════════════════════════
 // ── 事件处理器（由事件委托统一分发） ─────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * 输入事件处理器
+ */
 function handleInput(e) {
-  const root = e.currentTarget;
-  const target = e.target;
-  const ds = target.dataset;
+  const root = e.currentTarget; // 事件委托目标（app 或 modal overlay）
+  const target = e.target;      // 触发事件的元素（input/textarea/checkbox/radio/select）
+  const ds = target.dataset;    // 元素的 dataset 对象，包含所有 data- 开头的属性
 
-  // 数字输入过滤：只保留数字，再清除开头多余的 0（兜底处理粘贴场景）
+  // 对“最大调用深度”数字输入进行输入过滤：只保留数字，再清除开头多余的 0（兜底处理粘贴场景）
   if (ds.p === "max_call_subagent_depth") {
     target.value = target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
   }
 
-  // 单值绑定：data-p
+  // 拥有 data-p 属性的元素有输入时，根据元素类型转换（数字/布尔值），并更新配置
   if (ds.p) {
     let v = target.value;
     if (target.type === "checkbox") v = target.checked;
@@ -390,8 +362,8 @@ function handleInput(e) {
       const n = parseFloat(v);
       v = isNaN(n) ? v : n;
     }
-    set(ds.p, v);
-    refreshStatus();
+    set(ds.p, v);   // 更新配置
+    refreshStatus();  // 刷新状态显示
 
     // 路由相关字段变化时重渲染当前 tab
     if (ds.p === "router_mode_enabled" || ds.p === "router_subagent_name") {
@@ -400,22 +372,16 @@ function handleInput(e) {
     return;
   }
 
-  // 列表绑定：data-list / data-selectall / data-selectall-group
-  const listPath = ds.list || ds.selectall || ds.selectallGroup;
-  if (!listPath) return;
-
-  if (ds.selectall) {
-    root.querySelectorAll(`input[data-list="${listPath}"]`).forEach((el) => (el.checked = target.checked));
-  } else if (ds.selectallGroup) {
-    target.closest(".chklist-group").querySelectorAll(`input[data-list="${listPath}"]`).forEach((el) => (el.checked = target.checked));
-  }
-
-  const values = [...root.querySelectorAll(`input[data-list="${listPath}"]:checked`)].map((el) => el.value);
-  set(listPath, values);
-  syncSelectAll(listPath, root);
+  // 列表绑定（checkboxList / checkboxListGrouped）
+  const result = ui.chklist.handleChange({ root, target });
+  if (!result) return;
+  set(result.name, result.values);
   refreshStatus();
 }
 
+/**
+ * 键盘事件处理器
+ */
 function handleKeydown(e) {
   if (e.target.dataset?.p === "max_call_subagent_depth") {
     // 放行组合键（Ctrl/Cmd + A/C/V 等），仅拦截单字符非数字输入
@@ -427,6 +393,9 @@ function handleKeydown(e) {
   }
 }
 
+/**
+ * 点击事件处理器
+ */
 function handleBodyClick(e) {
   // ── 折叠卡片 ──
   const collapseHeader = e.target.closest(".collapse-header");
@@ -442,7 +411,7 @@ function handleBodyClick(e) {
     if (entry) {
       modal.openModal(entry.title, entry.contentFn(), {
         afterRender: [
-          (root) => applyIndeterminate(root),
+          (root) => ui.chklist.applyIndeterminate(root),
           (root) => bindScopeEventHandlers(root),
         ],
       });
@@ -462,13 +431,6 @@ function handleBodyClick(e) {
     saveConfig();
     return;
   }
-
-  // ── 撤销按钮 ──
-  if (e.target.closest("#btn-reset")) {
-    resetConfigToSaved();
-    setStatus("已撤销改动", "warn");
-    return;
-  }
 }
 
 /**
@@ -476,9 +438,9 @@ function handleBodyClick(e) {
  * click 由 handleBodyClick 统一分发
  */
 function bindScopeEventHandlers(root) {
-  root.addEventListener("input", handleInput);
-  root.addEventListener("keydown", handleKeydown);
-  root.addEventListener("click", handleBodyClick);
+  root.addEventListener("input", handleInput);  // 输入事件，用于更新配置
+  root.addEventListener("keydown", handleKeydown);  // 键盘事件，用于过滤数字输入
+  root.addEventListener("click", handleBodyClick);  // 点击事件，用于处理点击操作
 }
 
 // ═══════════════════════════════════════════════════════════════

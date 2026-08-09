@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>组件库测试页</title>
+  <link rel="stylesheet" href="./ui.css" />
+  <style>
+    /* ── 测试页专用样式（不属于组件库） ── */
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f4f5f7; margin: 0; padding: 24px; color: #333; }
+    .test-hd { max-width: 960px; margin: 0 auto 8px; }
+    .test-hd h1 { font-size: 22px; margin: 0 0 4px; }
+    .test-hd p { color: #888; font-size: 13px; margin: 0; }
+    .test-wrap { max-width: 960px; margin: 0 auto; }
+    .test-section > h2 { font-size: 15px; border-left: 4px solid #6366f1; padding-left: 8px; margin: 28px 0 12px; }
+    .test-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .mt { margin-top: 12px; }
+    .output-panel { background: #1e1e2e; color: #a6e3a1; padding: 12px; border-radius: 8px; font-family: "Consolas", monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+    .output-panel .label { color: #89b4fa; }
+  </style>
+</head>
+<body>
+  <div class="test-hd">
+    <h1>UI 组件库测试页</h1>
+    <p>验证组件库脱离插件独立运行：渲染、交互（全选联动 / 半选态 / Modal / Toast / Tip）。</p>
+  </div>
+
+  <div class="test-wrap" id="app"></div>
+
+  <script type="module">
+    import ui, { modal, toast, tip } from "./components.js";
+
+    // ═══════════════════════════════════════════════════════════
+    // 模拟业务层：事件委托 + 消费 handleChange 返回的 { name, values }
+    // 业务层不需要知道任何 data-* 契约或内部 DOM 类名
+    // ═══════════════════════════════════════════════════════════
+
+    const app = document.getElementById("app");
+
+    app.addEventListener("input", (e) => {
+      const result = ui.chklist.handleChange({ root: app, target: e.target });
+      if (result) {
+        const el = document.getElementById("list-output");
+        el.innerHTML = `<span class="label">name:</span> ${result.name}\n<span class="label">values:</span> ${JSON.stringify(result.values)}`;
+      }
+    });
+
+    // ── 基础组件 ──────────────────────────────────────────────
+    const basicDemo = ui.sectionCard({
+      title: "基础展示组件",
+      description: "grid / stat / card / panel / collapseCard / emptyState / badge / tag / pill",
+      content: `
+        ${ui.stat([
+          { label: "组件数", value: 20 },
+          { label: "状态", value: "正常" },
+          { label: "路由", value: "已开启" },
+        ])}
+        ${ui.badge({ text: "加载中", variant: "loading" })}
+        ${ui.badge({ text: "正常", variant: "ok" })}
+        ${ui.badge({ text: "警告", variant: "warn" })}
+        ${ui.badge({ text: "错误", variant: "err" })}
+        ${ui.tag({ text: "荐", variant: "purple" })}
+        ${ui.pill({ text: "3 个已选中" })}
+        ${ui.pill({ text: "暂无数据", variant: "muted" })}
+        <div class="mt">${ui.card({ title: "普通卡片", content: "内容可以包含任意 HTML，标题会自动转义。" })}</div>
+        ${ui.panel({ children: '<div style="padding:4px 0 8px"><b>纯容器 panel</b>：自定义复杂结构时使用</div>' })}
+        ${ui.collapseCard({ title: "可折叠卡片", content: "点击头部折叠/展开", expanded: true })}
+        ${ui.emptyState({ title: "空状态", description: "用于列表无数据时的提示", compact: true })}
+      `,
+    });
+
+    // ── 表单组件 ──────────────────────────────────────────────
+    const formDemo = ui.sectionCard({
+      title: "表单组件",
+      description: "numberInput / checkboxInput / selectInput / checkboxList / checkboxListGrouped",
+      content: `
+        <div class="test-grid">
+          ${ui.numberInput({ label: "最大深度", value: 3, hint: "仅允许 0 或正整数" })}
+          ${ui.checkboxInput({ label: "启用功能", checked: true, hint: "勾选即启用" })}
+          ${ui.selectInput({
+            label: "路由模式",
+            value: "auto",
+            options: [
+              { value: "auto", label: "自动" },
+              { value: "manual", label: "手动" },
+            ],
+            hint: "下拉选择",
+          })}
+        </div>
+        <div class="test-grid">
+          ${ui.checkboxList({
+            name: "fruits",
+            items: [
+              { value: "apple", label: "苹果", desc: "红色水果" },
+              { value: "banana", label: "香蕉", desc: "黄色水果" },
+              { value: "cherry", label: "樱桃" },
+              { value: "grape", label: "葡萄" },
+            ],
+            values: ["apple", "cherry"],
+            selectAllLabel: "全选水果",
+            hint: "带全选按钮的复选框列表",
+          })}
+          ${ui.checkboxListGrouped({
+            name: "tools",
+            groups: {
+              "开发工具": { vscode: "代码编辑器", git: "版本控制", docker: "容器化" },
+              "办公软件": { word: "文档编辑", excel: "表格处理" },
+            },
+            values: ["git", "word"],
+            hint: "分组复选框列表，每组自带全选，支持半选态",
+          })}
+        </div>
+        <div class="mt"><pre id="list-output" class="output-panel">在下方勾选/取消选项，这里实时显示 handleChange 返回的数据</pre></div>
+      `,
+    });
+
+    // ── 有状态组件 ────────────────────────────────────────────
+    const statefulDemo = ui.sectionCard({
+      title: "有状态组件",
+      description: "modal（modalCard + openModal）/ toast / tip",
+      content: `
+        ${modal.modalCard({
+          title: "工具选择",
+          triggerLabel: "打开配置",
+          contentFn: () => ui.checkboxListGrouped({
+            name: "modal_tools",
+            groups: {
+              "语言": { js: "JavaScript", py: "Python", go: "Go" },
+              "框架": { vue: "Vue", react: "React" },
+            },
+            values: ["js"],
+            selectAllLabel: "全选",
+          }),
+        })}
+        <div class="mt"><pre id="modal-output" class="output-panel">打开弹窗后勾选选项，这里显示弹窗内的 handleChange 数据</pre></div>
+        <div class="mt row">
+          ${ui.button({ label: "Toast 成功", attrs: { id: "btn-toast-ok" } })}
+          ${ui.button({ label: "Toast 错误", attrs: { id: "btn-toast-err", class: "btn-secondary" } })}
+          ${ui.button({ label: "显示 Tip", attrs: { id: "btn-tip", class: "btn-secondary" } })}
+        </div>
+      `,
+    });
+
+    // ── 渲染 ──────────────────────────────────────────────────
+    app.innerHTML = basicDemo + formDemo + statefulDemo;
+
+    // ── 折叠卡片交互 ──────────────────────────────────────────
+    app.addEventListener("click", (e) => {
+      const collapseHeader = e.target.closest(".collapse-header");
+      if (collapseHeader) {
+        collapseHeader.parentElement.classList.toggle("collapsed");
+        return;
+      }
+    });
+
+    // ── Modal 交互 ────────────────────────────────────────────
+    app.addEventListener("click", (e) => {
+      const trigger = e.target.closest(".modal-trigger");
+      if (!trigger) return;
+      const entry = modal.getCardEntry(trigger.dataset.mc);
+      if (!entry) return;
+      modal.openModal(entry.title, entry.contentFn(), {
+        afterRender: (overlay) => {
+          ui.chklist.applyIndeterminate(overlay);
+          overlay.addEventListener("input", (ev) => {
+            const result = ui.chklist.handleChange({ root: overlay, target: ev.target });
+            if (result) {
+              const el = document.getElementById("modal-output");
+              el.innerHTML = `<span class="label">name:</span> ${result.name}\n<span class="label">values:</span> ${JSON.stringify(result.values)}`;
+            }
+          });
+        },
+      });
+    });
+
+    // ── Toast / Tip 交互 ──────────────────────────────────────
+    document.getElementById("btn-toast-ok").addEventListener("click", () => {
+      toast.show("保存成功", "配置已写入", "ok");
+    });
+    document.getElementById("btn-toast-err").addEventListener("click", () => {
+      toast.show("保存失败", "网络异常", "error");
+    });
+    document.getElementById("btn-tip").addEventListener("click", (e) => {
+      tip.show(e.currentTarget, "这是一个临时提示气泡");
+    });
+  </script>
+</body>
+</html>
