@@ -38,7 +38,6 @@ const state = {
     isSaving: false,  // 是否正在保存配置
     isLoading: false, // 是否正在加载配置
     hasLoaded: false, // 是否已加载配置
-    isDirty: false,    // 是否有未保存的变更
     currentTabName: "basic",  // 当前选中的选项卡名称
   },
 };
@@ -52,11 +51,15 @@ function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-// 替换配置状态，更新当前配置并标记为未变更
+// 当前配置与已保存配置是否有差异
+function hasConfigChanged() {
+  return JSON.stringify(state.data.config) !== JSON.stringify(state.data.savedConfig);
+}
+
+// 替换配置状态，更新当前配置
 function replaceConfigState(nextConfig) {
   Object.keys(state.data.config).forEach((key) => delete state.data.config[key]);
   Object.assign(state.data.config, cloneValue(nextConfig));
-  state.ui.isDirty = false;
 }
 
 // ── 配置读写（按 . 路径访问嵌套） ──
@@ -74,7 +77,6 @@ function set(path, val) {
   const ks = path.split(".");
   const o = ks.slice(0, -1).reduce((acc, k) => (acc[k] ??= {}, acc[k]), state.data.config);
   o[ks[ks.length - 1]] = val;
-  state.ui.isDirty = true;
 }
 
 // ── 路由 / SubAgent 辅助查询 ──
@@ -269,13 +271,14 @@ function setStatus(text, cls) {
 // 更新保存/撤销按钮状态
 function setSaveButtonState() {
   const ready = state.ui.hasLoaded && !state.ui.isLoading;
-  els.btnSave.disabled = !ready || !state.ui.isDirty || state.ui.isSaving;
+  const dirty = hasConfigChanged();
+  els.btnSave.disabled = !ready || !dirty || state.ui.isSaving;
   els.btnSave.textContent = state.ui.isSaving ? "保存中..." : "保存配置项";
-  els.btnReset.disabled = !ready || !state.ui.isDirty;
+  els.btnReset.disabled = !ready || !dirty;
 }
 
 function refreshStatus() {
-  setStatus(state.ui.isDirty ? "配置已修改" : "已加载", state.ui.isDirty ? "warn" : "ok");
+  setStatus(hasConfigChanged() ? "配置已修改" : "已加载", hasConfigChanged() ? "warn" : "ok");
   setSaveButtonState();
 }
 
@@ -333,7 +336,7 @@ function switchTab(name) {
 // ═══════════════════════════════════════════════════════════════
 
 async function saveConfig() {
-  if (state.ui.isSaving || state.ui.isLoading || !state.ui.isDirty) return;
+  if (state.ui.isSaving || state.ui.isLoading || !hasConfigChanged()) return;
 
   state.ui.isSaving = true;
   setSaveButtonState();
@@ -343,7 +346,6 @@ async function saveConfig() {
     const result = await api.postConfig(state.data.config);
     if (result.success) {
       Object.assign(state.data.savedConfig, cloneValue(state.data.config));
-      state.ui.isDirty = false;
       setStatus("保存成功", "ok");
     } else {
       setStatus("保存失败", "err");
