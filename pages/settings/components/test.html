@@ -11,9 +11,14 @@
     .test-hd { max-width: 960px; margin: 0 auto 8px; }
     .test-hd h1 { font-size: 22px; margin: 0 0 4px; }
     .test-hd p { color: #888; font-size: 13px; margin: 0; }
-    .test-wrap { max-width: 960px; margin: 0 auto; }
-    .test-section > h2 { font-size: 15px; border-left: 4px solid #6366f1; padding-left: 8px; margin: 28px 0 12px; }
-    .test-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; align-items: start; }
+
+    /* 组件实例标识：虚线框 + 组件名标签 */
+    .demo-item { border: 1px dashed #d0d5dd; border-radius: 8px; padding: 10px; background: #fafbfc; }
+    .demo-tag { display: inline-block; font-family: "Consolas", monospace; font-size: 11px; color: #4f46e5; background: #eef0ff; padding: 2px 8px; border-radius: 4px; margin-bottom: 8px; }
+    .demo-body .card, .demo-body .section-card { margin-bottom: 0; }
+    .demo-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+
+    .test-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; align-items: start; }
     .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .mt { margin-top: 12px; }
     .output-panel { background: #1e1e2e; color: #a6e3a1; padding: 12px; border-radius: 8px; font-family: "Consolas", monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
@@ -23,7 +28,7 @@
 <body>
   <div class="test-hd">
     <h1>UI 组件库测试页</h1>
-    <p>验证组件库脱离插件独立运行：渲染、交互（全选联动 / 半选态 / Modal / Toast / Tip）。</p>
+    <p>验证组件库脱离插件独立运行：渲染、交互（全选联动 / 半选态 / Modal / Toast / Tip）。每个组件实例用虚线框 + 组件名标注。</p>
   </div>
 
   <div class="test-wrap" id="app"></div>
@@ -32,10 +37,17 @@
     import ui, { modal, toast, tip } from "./components.js";
 
     // ═══════════════════════════════════════════════════════════
-    // 模拟业务层：事件委托 + 消费 handleChange 返回的 { name, values }
-    // 业务层不需要知道任何 data-* 契约或内部 DOM 类名
+    // 测试页辅助：给组件实例加"组件名 + 虚线框"标识
     // ═══════════════════════════════════════════════════════════
+    const demo = (label, html) => `
+      <div class="demo-item">
+        <code class="demo-tag">${label}</code>
+        <div class="demo-body">${html}</div>
+      </div>`;
 
+    // ═══════════════════════════════════════════════════════════
+    // 模拟业务层：事件委托 + 消费 handleChange 返回的 { name, values }
+    // ═══════════════════════════════════════════════════════════
     const app = document.getElementById("app");
 
     app.addEventListener("input", (e) => {
@@ -46,39 +58,46 @@
       }
     });
 
-    // ── 基础组件 ──────────────────────────────────────────────
+    // ── 基础展示组件 ────────────────────────────────────────────
     const basicDemo = ui.sectionCard({
       title: "基础展示组件",
-      description: "grid / stat / card / panel / collapseCard / emptyState / badge / tag / pill",
+      description: "stat / badge / tag / pill / card / panel / collapseCard / emptyState",
       content: `
-        ${ui.stat([
-          { label: "组件数", value: 20 },
-          { label: "状态", value: "正常" },
-          { label: "路由", value: "已开启" },
-        ])}
-        ${ui.badge({ text: "加载中", variant: "loading" })}
-        ${ui.badge({ text: "正常", variant: "ok" })}
-        ${ui.badge({ text: "警告", variant: "warn" })}
-        ${ui.badge({ text: "错误", variant: "err" })}
-        ${ui.tag({ text: "荐", variant: "purple" })}
-        ${ui.pill({ text: "3 个已选中" })}
-        ${ui.pill({ text: "暂无数据", variant: "muted" })}
-        <div class="mt">${ui.card({ title: "普通卡片", content: "内容可以包含任意 HTML，标题会自动转义。" })}</div>
-        ${ui.panel({ children: '<div style="padding:4px 0 8px"><b>纯容器 panel</b>：自定义复杂结构时使用</div>' })}
-        ${ui.collapseCard({ title: "可折叠卡片", content: "点击头部折叠/展开", expanded: true })}
-        ${ui.emptyState({ title: "空状态", description: "用于列表无数据时的提示", compact: true })}
-      `,
+        <div class="test-grid">
+          ${demo("ui.stat", ui.stat([
+            { label: "组件数", value: 20 },
+            { label: "状态", value: "正常" },
+            { label: "路由", value: "已开启" },
+          ]))}
+          ${demo("ui.badge · 四种变体", `
+            <div class="demo-row">
+              ${ui.badge({ text: "加载中", variant: "loading" })}
+              ${ui.badge({ text: "正常", variant: "ok" })}
+              ${ui.badge({ text: "警告", variant: "warn" })}
+              ${ui.badge({ text: "错误", variant: "err" })}
+            </div>`)}
+          ${demo("ui.tag", ui.tag({ text: "荐", variant: "purple" }))}
+          ${demo("ui.pill · 两种变体", `
+            <div class="demo-row">
+              ${ui.pill({ text: "3 个已选中" })}
+              ${ui.pill({ text: "暂无数据", variant: "muted" })}
+            </div>`)}
+          ${demo("ui.card", ui.card({ title: "普通卡片", content: "内容可以包含任意 HTML，标题会自动转义。" }))}
+          ${demo("ui.panel", ui.panel({ children: '<div style="padding:4px 0 8px"><b>纯容器 panel</b>：自定义复杂结构时使用</div>' }))}
+          ${demo("ui.collapseCard", ui.collapseCard({ title: "可折叠卡片", content: "点击头部折叠/展开", expanded: true }))}
+          ${demo("ui.emptyState", ui.emptyState({ title: "空状态", description: "用于列表无数据时的提示", compact: true }))}
+        </div>`,
     });
 
-    // ── 表单组件 ──────────────────────────────────────────────
+    // ── 表单组件 ────────────────────────────────────────────────
     const formDemo = ui.sectionCard({
       title: "表单组件",
       description: "numberInput / checkboxInput / selectInput / checkboxList / checkboxListGrouped",
       content: `
         <div class="test-grid">
-          ${ui.numberInput({ label: "最大深度", value: 3, hint: "仅允许 0 或正整数" })}
-          ${ui.checkboxInput({ label: "启用功能", checked: true, hint: "勾选即启用" })}
-          ${ui.selectInput({
+          ${demo("ui.numberInput", ui.numberInput({ label: "最大深度", value: 3, hint: "仅允许 0 或正整数" }))}
+          ${demo("ui.checkboxInput", ui.checkboxInput({ label: "启用功能", checked: true, hint: "勾选即启用" }))}
+          ${demo("ui.selectInput", ui.selectInput({
             label: "路由模式",
             value: "auto",
             options: [
@@ -86,10 +105,8 @@
               { value: "manual", label: "手动" },
             ],
             hint: "下拉选择",
-          })}
-        </div>
-        <div class="test-grid">
-          ${ui.checkboxList({
+          }))}
+          ${demo("ui.checkboxList", ui.checkboxList({
             name: "fruits",
             items: [
               { value: "apple", label: "苹果", desc: "红色水果" },
@@ -100,8 +117,8 @@
             values: ["apple", "cherry"],
             selectAllLabel: "全选水果",
             hint: "带全选按钮的复选框列表",
-          })}
-          ${ui.checkboxListGrouped({
+          }))}
+          ${demo("ui.checkboxListGrouped", ui.checkboxListGrouped({
             name: "tools",
             groups: {
               "开发工具": { vscode: "代码编辑器", git: "版本控制", docker: "容器化" },
@@ -109,43 +126,55 @@
             },
             values: ["git", "word"],
             hint: "分组复选框列表，每组自带全选，支持半选态",
-          })}
+          }))}
+          ${demo("ui.checkboxList · 第二个实例", ui.checkboxList({
+            name: "sports",
+            items: [
+              { value: "swim", label: "游泳", desc: "水中运动" },
+              { value: "run", label: "跑步", desc: "有氧运动" },
+              { value: "bike", label: "骑行", desc: "户外运动" },
+            ],
+            values: ["run"],
+            selectAllLabel: "全选运动",
+            hint: "独立的 name，与上面的列表互不影响",
+          }))}
         </div>
-        <div class="mt"><pre id="list-output" class="output-panel">在下方勾选/取消选项，这里实时显示 handleChange 返回的数据</pre></div>
-      `,
+        <div class="mt"><pre id="list-output" class="output-panel">在下方勾选/取消选项，这里实时显示 handleChange 返回的数据</pre></div>`,
     });
 
-    // ── 有状态组件 ────────────────────────────────────────────
+    // ── 有状态组件 ──────────────────────────────────────────────
     const statefulDemo = ui.sectionCard({
       title: "有状态组件",
       description: "modal（modalCard + openModal）/ toast / tip",
       content: `
-        ${modal.modalCard({
-          title: "工具选择",
-          triggerLabel: "打开配置",
-          contentFn: () => ui.checkboxListGrouped({
-            name: "modal_tools",
-            groups: {
-              "语言": { js: "JavaScript", py: "Python", go: "Go" },
-              "框架": { vue: "Vue", react: "React" },
-            },
-            values: ["js"],
-            selectAllLabel: "全选",
-          }),
-        })}
-        <div class="mt"><pre id="modal-output" class="output-panel">打开弹窗后勾选选项，这里显示弹窗内的 handleChange 数据</pre></div>
-        <div class="mt row">
-          ${ui.button({ label: "Toast 成功", attrs: { id: "btn-toast-ok" } })}
-          ${ui.button({ label: "Toast 错误", attrs: { id: "btn-toast-err", class: "btn-secondary" } })}
-          ${ui.button({ label: "显示 Tip", attrs: { id: "btn-tip", class: "btn-secondary" } })}
+        <div class="test-grid">
+          ${demo("modal.modalCard", modal.modalCard({
+            title: "工具选择",
+            triggerLabel: "打开配置",
+            contentFn: () => ui.checkboxListGrouped({
+              name: "modal_tools",
+              groups: {
+                "语言": { js: "JavaScript", py: "Python", go: "Go" },
+                "框架": { vue: "Vue", react: "React" },
+              },
+              values: ["js"],
+              selectAllLabel: "全选",
+            }),
+          }))}
+          ${demo("toast.show · 两种类型", `
+            <div class="demo-row">
+              ${ui.button({ label: "Toast 成功", attrs: { id: "btn-toast-ok" } })}
+              ${ui.button({ label: "Toast 错误", attrs: { id: "btn-toast-err", class: "btn-secondary" } })}
+            </div>`)}
+          ${demo("tip.show", ui.button({ label: "显示 Tip", attrs: { id: "btn-tip", class: "btn-secondary" } }))}
         </div>
-      `,
+        <div class="mt"><pre id="modal-output" class="output-panel">打开弹窗后勾选选项，这里显示弹窗内的 handleChange 数据</pre></div>`,
     });
 
-    // ── 渲染 ──────────────────────────────────────────────────
+    // ── 渲染 ────────────────────────────────────────────────────
     app.innerHTML = basicDemo + formDemo + statefulDemo;
 
-    // ── 折叠卡片交互 ──────────────────────────────────────────
+    // ── 折叠卡片交互 ────────────────────────────────────────────
     app.addEventListener("click", (e) => {
       const collapseHeader = e.target.closest(".collapse-header");
       if (collapseHeader) {
@@ -154,7 +183,7 @@
       }
     });
 
-    // ── Modal 交互 ────────────────────────────────────────────
+    // ── Modal 交互 ──────────────────────────────────────────────
     app.addEventListener("click", (e) => {
       const trigger = e.target.closest(".modal-trigger");
       if (!trigger) return;
@@ -174,7 +203,7 @@
       });
     });
 
-    // ── Toast / Tip 交互 ──────────────────────────────────────
+    // ── Toast / Tip 交互 ────────────────────────────────────────
     document.getElementById("btn-toast-ok").addEventListener("click", () => {
       toast.show("保存成功", "配置已写入", "ok");
     });
