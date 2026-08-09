@@ -375,9 +375,9 @@ function handleInput(e) {
   const target = e.target;
   const ds = target.dataset;
 
-  // 数字输入过滤
+  // 数字输入过滤（只保留数字，兜底处理粘贴场景）
   if (ds.p === "max_call_subagent_depth") {
-    target.value = target.value.replace(/^0+(?=\d)|-/g, "");
+    target.value = target.value.replace(/\D/g, "");
   }
 
   // 单值绑定：data-p
@@ -416,6 +416,8 @@ function handleInput(e) {
 
 function handleKeydown(e) {
   if (e.target.dataset?.p === "max_call_subagent_depth") {
+    // 放行组合键（Ctrl/Cmd + A/C/V 等），仅拦截单字符非数字输入
+    if (e.ctrlKey || e.metaKey) return;
     if (e.key.length === 1 && !/[0-9]/.test(e.key)) {
       e.preventDefault();
       tip.show(e.target, "只允许输入 0 或正整数");
@@ -490,11 +492,10 @@ function bindScopeEventHandlers(root) {
 
   await bridge.ready();
   try {
-    state.data.builtinToolsInfo = await api.get("builtin_tools");
-    state.data.subAgentNames = await api.get("subagent_names");
-    const rawConfig = await api.getConfig();
-    replaceConfigState(rawConfig);
-    Object.assign(state.data.savedConfig, cloneValue(state.data.config));
+    state.data.builtinToolsInfo = await api.get("builtin_tools"); // 获取内置工具信息
+    state.data.subAgentNames = await api.get("subagent_names");   // 获取 SubAgent 名称列表
+    replaceConfigState(await api.getConfig());                                // 获取当前配置并更新状态
+    Object.assign(state.data.savedConfig, cloneValue(state.data.config));    // 深拷贝，用于判断是否有改动
     state.ui.hasLoaded = true;
     setStatus("已加载", "ok");
   } catch (e) {
