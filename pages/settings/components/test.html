@@ -127,6 +127,16 @@
             values: ["git", "word"],
             hint: "分组复选框列表，每组自带全选，支持半选态",
           }))}
+          ${demo("ui.checkboxList · 与上面 tools 同名", ui.checkboxList({
+            name: "tools",
+            items: [
+              { value: "figma", label: "Figma", desc: "设计工具" },
+              { value: "slack", label: "Slack", desc: "协作工具" },
+            ],
+            values: [],
+            selectAllLabel: "全选独立列表",
+            hint: "name 与上方的 checkboxListGrouped 相同，观察值收集是否跨实例合并",
+          }))}
           ${demo("ui.checkboxList · 第二个实例", ui.checkboxList({
             name: "sports",
             items: [
