@@ -42,7 +42,7 @@ const state = {
     isSaving: false,
     isLoading: false,
     hasLoaded: false,
-    dirtyCount: 0,
+    isDirty: false,
     currentTabName: "basic",
   },
 };
@@ -55,42 +55,35 @@ function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function ensureArrayField(target, field) {
-  if (!Array.isArray(target[field])) {
-    target[field] = [];
-  }
-}
-
 function normalizeConfigShape(raw = {}) {
-  const normalized = cloneValue(raw || {});
+  const base = raw || {};
+  const defaultSetting = { builtin_tools: [], callable_subagents: [] };
 
-  if (!normalized.subagent_settings || typeof normalized.subagent_settings !== "object") {
-    normalized.subagent_settings = {};
+  const subagentDefaultSetting = {
+    ...defaultSetting,
+    ...(base.subagent_default_setting && typeof base.subagent_default_setting === "object"
+      ? base.subagent_default_setting
+      : {}),
+  };
+
+  const subagentSettings = {};
+  const rawSettings = base.subagent_settings && typeof base.subagent_settings === "object"
+    ? base.subagent_settings
+    : {};
+  for (const [name, value] of Object.entries(rawSettings)) {
+    subagentSettings[name] = {
+      ...defaultSetting,
+      ...(value && typeof value === "object" ? value : {}),
+    };
   }
 
-  if (!normalized.subagent_default_setting || typeof normalized.subagent_default_setting !== "object") {
-    normalized.subagent_default_setting = { builtin_tools: [], callable_subagents: [] };
-  }
-
-  ensureArrayField(normalized.subagent_default_setting, "builtin_tools");
-  ensureArrayField(normalized.subagent_default_setting, "callable_subagents");
-
-  Object.entries(normalized.subagent_settings).forEach(([name, value]) => {
-    if (!value || typeof value !== "object") {
-      normalized.subagent_settings[name] = cloneValue(normalized.subagent_default_setting);
-      return;
-    }
-    ensureArrayField(value, "builtin_tools");
-    ensureArrayField(value, "callable_subagents");
-  });
-
-  return normalized;
+  return { ...base, subagent_default_setting: subagentDefaultSetting, subagent_settings: subagentSettings };
 }
 
 function replaceConfigState(nextConfig) {
   Object.keys(state.data.config).forEach((key) => delete state.data.config[key]);
   Object.assign(state.data.config, cloneValue(nextConfig));
-  state.ui.dirtyCount = 0;
+  state.ui.isDirty = false;
 }
 
 // ── 配置读写（按 . 路径访问嵌套） ──
@@ -104,75 +97,30 @@ function get(path, def) {
   return v !== undefined ? v : def;
 }
 
-function _valuesEqual(a, b) {
-  if (a === b) return true;
-  if (a == null && b == null) return true;
-  if (typeof a !== typeof b) return false;
-  if (typeof a === "object") return JSON.stringify(a) === JSON.stringify(b);
-  return false;
-}
-
 function set(path, val) {
   const ks = path.split(".");
   const o = ks.slice(0, -1).reduce((acc, k) => (acc[k] ??= {}, acc[k]), state.data.config);
-  const key = ks[ks.length - 1];
-  const oldVal = o[key];
-  if (_valuesEqual(oldVal, val)) return;
-  o[key] = val;
-  state.ui.dirtyCount++;
+  o[ks[ks.length - 1]] = val;
+  state.ui.isDirty = true;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ── 数据源（字段 spec / 选项构造） ────────────────────────────
+// ── 数据源（SubAgent 选项构造） ────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
-const basicFieldSpecs = [
-  {
-    type: "number",
-    key: "max_call_subagent_depth",
-    label: "最大嵌套调用深度",
-    hint: "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。",
-  },
-  {
-    type: "checkbox",
-    key: "router_mode_enabled",
-    label: "开启路由 SubAgent 模式",
-    hint: "开启后，用户输入将先由路由 SubAgent 处理，由其决定直接返回 MainAgent 或交由下游 SubAgent 处理。",
-  },
-  {
-    type: "card",
-    key: "router_subagent_name",
-    label: "路由 SubAgent 配置",
-    className: "router-config-card",
-    show: () => get("router_mode_enabled", false),
-    content: () => ui.selectInput({
-      label: "路由 SubAgent 名称",
-      value: get("router_subagent_name", ""),
-      options: state.data.subAgentNames,
-      hint: "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。",
-      attrs: { "data-p": "router_subagent_name" },
-    }),
-  },
-];
-
-function resolveFieldOptions(options) {
-  if (typeof options === "function") return options();
-  return options || [];
-}
-
-function buildSubAgentFieldSpecs(name) {
+function buildSubAgentModalEntries(name) {
   const base = `subagent_settings.${name}`;
   const callableOptions = getCallableSubagentOptions(name);
 
   return [
-    { type: "modal", label: "可调 SubAgent", content: () => ui.checkboxList({
+    { label: "可调 SubAgent", content: () => ui.checkboxList({
       items: callableOptions,
       values: get(`${base}.callable_subagents`, []),
       selectAllLabel: "全选",
       itemAttrs: { "data-list": `${base}.callable_subagents` },
       selectAllAttrs: { "data-selectall": `${base}.callable_subagents` },
     }) },
-    { type: "modal", label: "内置工具", content: () => ui.checkboxListGrouped({
+    { label: "内置工具", content: () => ui.checkboxListGrouped({
       groups: state.data.builtinToolsInfo.groups || {},
       values: get(`${base}.builtin_tools`, []),
       itemAttrs: { "data-list": `${base}.builtin_tools` },
@@ -204,40 +152,14 @@ function getRouterStateInfo() {
 
 function getSubAgentSetting(name) {
   const raw = get(`subagent_settings.${name}`, null);
+  const fallback = { builtin_tools: [], callable_subagents: [] };
   if (!raw || typeof raw !== "object") {
-    return cloneValue(get("subagent_default_setting", { builtin_tools: [], callable_subagents: [] }));
+    return { ...get("subagent_default_setting", fallback), ...fallback };
   }
   return {
     builtin_tools: Array.isArray(raw.builtin_tools) ? raw.builtin_tools : [],
     callable_subagents: Array.isArray(raw.callable_subagents) ? raw.callable_subagents : [],
   };
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ── 渲染器 · 字段级 ──────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════
-
-function renderFieldSpec(spec) {
-  const val = get(spec.key);
-  switch (spec.type) {
-    case "number":
-      return ui.numberInput({ label: spec.label, value: val ?? 0, hint: spec.hint, attrs: { "data-p": spec.key } });
-    case "checkbox":
-      return ui.checkboxInput({ label: spec.label, checked: !!val, hint: spec.hint, attrs: { "data-p": spec.key } });
-    case "select":
-      return ui.selectInput({ label: spec.label, value: val ?? "", options: resolveFieldOptions(spec.options), hint: spec.hint, attrs: { "data-p": spec.key } });
-    case "card": {
-      const content = typeof spec.content === "function" ? spec.content() : (spec.content || "");
-      const visible = typeof spec.show === "function" ? spec.show() : (spec.show !== false);
-      return ui.card({ title: spec.label, content, show: visible, className: spec.className || "" });
-    }
-    default:
-      return "";
-  }
-}
-
-function renderFieldGroup(specs) {
-  return (specs || []).map(renderFieldSpec).join("");
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -268,36 +190,6 @@ function renderConfigOverview() {
       `).join("")}
     </div>
   `;
-}
-
-function renderQuickGuide() {
-  const items = [
-    {
-      title: "先定路由",
-      desc: "如果你希望请求先经过某个 SubAgent 判断，再决定是否继续下发，优先把路由模式打开。",
-    },
-    {
-      title: "先收缩权限",
-      desc: "先让每个 SubAgent 只暴露最常用的下游代理与内置工具，配置会更清晰也更稳定。",
-    },
-    {
-      title: "再做精细化",
-      desc: "当流程稳定后，再补充更多工具与子代理，让系统行为更可控。",
-    },
-  ];
-
-  const content = `
-    <div class="guide-list">
-      ${items.map((item) => `
-        <div class="guide-item">
-          <div class="guide-item-title">${escapeHtml(item.title)}</div>
-          <div class="guide-item-desc">${escapeHtml(item.desc)}</div>
-        </div>
-      `).join("")}
-    </div>
-  `;
-
-  return ui.sectionCard({ title: "配置建议", description: "建议按这个顺序完成第一轮配置，让页面更容易维护。", content });
 }
 
 function renderSubAgentIntro() {
@@ -341,7 +233,9 @@ function renderSubAgentCard(name) {
     <div class="subagent-summary">${summary || ui.pill({ text: "尚未配置", variant: "muted" })}</div>
   </div>`;
 
-  const content = buildSubAgentFieldSpecs(name).map(spec => modal.modalCard({ title: spec.label, contentFn: spec.content, triggerLabel: "配置" })).join("");
+  const content = buildSubAgentModalEntries(name)
+    .map((entry) => modal.modalCard({ title: entry.label, contentFn: entry.content, triggerLabel: "配置" }))
+    .join("");
 
   return ui.panel({ children: header + content, className: isRouter ? "card-highlight-purple" : "" });
 }
@@ -349,6 +243,36 @@ function renderSubAgentCard(name) {
 // ═══════════════════════════════════════════════════════════════
 // ── 渲染器 · Tab 主入口 ──────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
+
+function renderBasicConfigContent() {
+  const maxDepth = ui.numberInput({
+    label: "最大嵌套调用深度",
+    value: get("max_call_subagent_depth", 0),
+    hint: "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。",
+    attrs: { "data-p": "max_call_subagent_depth" },
+  });
+
+  const routerEnabled = ui.checkboxInput({
+    label: "开启路由 SubAgent 模式",
+    checked: get("router_mode_enabled", false),
+    hint: "开启后，用户输入将先由路由 SubAgent 处理，由其决定直接返回 MainAgent 或交由下游 SubAgent 处理。",
+    attrs: { "data-p": "router_mode_enabled" },
+  });
+
+  let routerCard = "";
+  if (get("router_mode_enabled", false)) {
+    const routerSelect = ui.selectInput({
+      label: "路由 SubAgent 名称",
+      value: get("router_subagent_name", ""),
+      options: state.data.subAgentNames,
+      hint: "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。",
+      attrs: { "data-p": "router_subagent_name" },
+    });
+    routerCard = ui.card({ title: "路由 SubAgent 配置", content: routerSelect, className: "router-config-card" });
+  }
+
+  return maxDepth + routerEnabled + routerCard;
+}
 
 function renderBasicTab() {
   const routerState = getRouterStateInfo();
@@ -369,8 +293,11 @@ function renderBasicTab() {
       </div>
     </div>`,
     renderConfigOverview(),
-    renderQuickGuide(),
-    ui.sectionCard({ title: "基础配置", description: "控制主流程、路由行为以及基础调用层级。", content: renderFieldGroup(basicFieldSpecs) }),
+    ui.sectionCard({
+      title: "基础配置",
+      description: "控制主流程、路由行为以及基础调用层级。",
+      content: renderBasicConfigContent(),
+    }),
   ].join("");
 }
 
@@ -420,50 +347,38 @@ function setStatus(text, cls) {
 }
 
 function setSaveButtonState() {
-  const disabled = state.ui.isSaving || state.ui.isLoading || !state.ui.hasLoaded || state.ui.dirtyCount === 0;
+  const disabled = state.ui.isSaving || state.ui.isLoading || !state.ui.hasLoaded || !state.ui.isDirty;
   els.btnSave.disabled = disabled;
   els.btnSave.textContent = state.ui.isSaving ? "保存中..." : "保存配置项";
   els.btnReset.disabled = disabled;
 }
 
 function refreshStatus() {
-  const changed = state.ui.dirtyCount > 0;
-  setStatus(changed ? "配置已修改" : "已加载", changed ? "warn" : "ok");
+  setStatus(state.ui.isDirty ? "配置已修改" : "已加载", state.ui.isDirty ? "warn" : "ok");
   setSaveButtonState();
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ── UI 组件 · data-p 绑定 / 全选同步 ────────────────────────
+// ── UI 组件 · 全选同步 ────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
-function _syncSelectAll(path, root = els.body) {
+function syncSelectAll(path, root) {
   const syncCheckbox = (el, total, checked) => {
     el.checked = total > 0 && checked === total;
     el.indeterminate = checked > 0 && checked < total;
   };
   const items = [...root.querySelectorAll(`input[data-list="${path}"]`)];
   const sa = root.querySelector(`input[data-selectall="${path}"]`);
-  if (sa) syncCheckbox(sa, items.length, items.filter(el => el.checked).length);
+  if (sa) syncCheckbox(sa, items.length, items.filter((el) => el.checked).length);
 
-  root.querySelectorAll(`input[data-selectall-group="${path}"]`).forEach(g => {
+  root.querySelectorAll(`input[data-selectall-group="${path}"]`).forEach((g) => {
     const gItems = [...g.closest(".chklist-group").querySelectorAll(`input[data-list="${path}"]`)];
-    syncCheckbox(g, gItems.length, gItems.filter(el => el.checked).length);
+    syncCheckbox(g, gItems.length, gItems.filter((el) => el.checked).length);
   });
 }
 
-function bindDataP(root) {
-  root.querySelectorAll("[data-p]").forEach((el) => {
-    const handler = () => {
-      let v = el.value;
-      if (el.type === "checkbox") v = el.checked;
-      else if (el.type === "number") { const n = parseFloat(v); v = isNaN(n) ? v : n; }
-      set(el.dataset.p, v);
-      refreshStatus();
-    };
-    el.addEventListener("input", handler);
-    el.addEventListener("change", handler);
-  });
-  root.querySelectorAll("input[data-indeterminate='true']").forEach(el => el.indeterminate = true);
+function applyIndeterminate(root) {
+  root.querySelectorAll("input[data-indeterminate='true']").forEach((el) => (el.indeterminate = true));
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -482,7 +397,11 @@ function updateTabsUI(tabName) {
 function renderBody(tabName) {
   const renderer = tabRenderers[tabName] ?? tabRenderers.basic;
   els.body.innerHTML = renderer();
-  bindDataP(els.body);
+  applyIndeterminate(els.body);
+}
+
+function rerenderCurrentTab() {
+  renderBody(state.ui.currentTabName);
 }
 
 function switchTab(name) {
@@ -498,7 +417,7 @@ function switchTab(name) {
 // ═══════════════════════════════════════════════════════════════
 
 async function saveConfig() {
-  if (state.ui.isSaving || state.ui.isLoading || state.ui.dirtyCount === 0) return;
+  if (state.ui.isSaving || state.ui.isLoading || !state.ui.isDirty) return;
 
   state.ui.isSaving = true;
   setSaveButtonState();
@@ -508,7 +427,7 @@ async function saveConfig() {
     const result = await api.postConfig(state.data.config);
     if (result.success) {
       Object.assign(state.data.savedConfig, cloneValue(state.data.config));
-      state.ui.dirtyCount = 0;
+      state.ui.isDirty = false;
       setStatus("保存成功", "ok");
     } else {
       setStatus("保存失败", "err");
@@ -535,30 +454,60 @@ function resetConfigToSaved() {
 // ── 事件处理器（由事件委托统一分发） ─────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
-function handleInput(e) {
-  const root = e.currentTarget;
-  const ds = e.target.dataset;
+/**
+ * 从事件目标提取 data-p / data-list / data-selectall / data-selectall-group
+ * 并写入 state，统一由事件委托处理，不需要逐个元素 addEventListener。
+ */
+function writeStateFromTarget(target, root) {
+  const ds = target.dataset;
 
-  if (ds.p === "max_call_subagent_depth") {
-    e.target.value = e.target.value.replace(/^0+(?=\d)|-/g, "");
-  }
-  if (ds.p === "router_mode_enabled") {
-    root.querySelector(".router-config-card")?.classList.toggle("hidden", !e.target.checked);
+  // 单值绑定：data-p
+  if (ds.p) {
+    let v = target.value;
+    if (target.type === "checkbox") v = target.checked;
+    else if (target.type === "number") {
+      const n = parseFloat(v);
+      v = isNaN(n) ? v : n;
+    }
+    set(ds.p, v);
+    return { type: "single", key: ds.p };
   }
 
-  const path = ds.list || ds.selectall || ds.selectallGroup;
-  if (!path) return;
+  // 列表绑定：data-list / data-selectall / data-selectall-group
+  const listPath = ds.list || ds.selectall || ds.selectallGroup;
+  if (!listPath) return null;
 
   if (ds.selectall) {
-    root.querySelectorAll(`input[data-list="${path}"]`).forEach(el => el.checked = e.target.checked);
+    root.querySelectorAll(`input[data-list="${listPath}"]`).forEach((el) => (el.checked = target.checked));
   } else if (ds.selectallGroup) {
-    e.target.closest(".chklist-group").querySelectorAll(`input[data-list="${path}"]`).forEach(el => el.checked = e.target.checked);
+    target
+      .closest(".chklist-group")
+      .querySelectorAll(`input[data-list="${listPath}"]`)
+      .forEach((el) => (el.checked = target.checked));
   }
 
-  const values = [...root.querySelectorAll(`input[data-list="${path}"]:checked`)].map(el => el.value);
-  set(path, values);
-  _syncSelectAll(path, root);
+  const values = [...root.querySelectorAll(`input[data-list="${listPath}"]:checked`)].map((el) => el.value);
+  set(listPath, values);
+  syncSelectAll(listPath, root);
+  return { type: "list", path: listPath };
+}
+
+function handleInput(e) {
+  const root = e.currentTarget;
+  const target = e.target;
+  const ds = target.dataset;
+
+  if (ds.p === "max_call_subagent_depth") {
+    target.value = target.value.replace(/^0+(?=\d)|-/g, "");
+  }
+
+  const needsRerender = ds.p === "router_mode_enabled" || ds.p === "router_subagent_name";
+
+  const written = writeStateFromTarget(target, root);
+  if (!written) return;
+
   refreshStatus();
+  if (needsRerender) rerenderCurrentTab();
 }
 
 function handleKeydown(e) {
@@ -582,9 +531,14 @@ function handleBodyClick(e) {
   const modalTrigger = e.target.closest(".modal-trigger");
   if (modalTrigger) {
     const entry = modal.getCardEntry(modalTrigger.dataset.mc);
-    if (entry) modal.openModal(entry.title, entry.contentFn(), {
-      afterRender: [bindDataP, bindScopeEventHandlers],
-    });
+    if (entry) {
+      modal.openModal(entry.title, entry.contentFn(), {
+        afterRender: [
+          (root) => applyIndeterminate(root),
+          (root) => bindScopeEventHandlers(root),
+        ],
+      });
+    }
     return;
   }
 
