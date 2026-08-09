@@ -30,20 +30,17 @@ const api = {
 
 const state = {
   data: {
-    config: {
-      subagent_settings: {},
-      subagent_default_setting: { builtin_tools: [], callable_subagents: [] },
-    },
+    config: {},
     savedConfig: {},
     builtinToolsInfo: { groups: {} },
     subAgentNames: [],
   },
   ui: {
-    isSaving: false,
-    isLoading: false,
-    hasLoaded: false,
-    isDirty: false,
-    currentTabName: "basic",
+    isSaving: false,  // 是否正在保存配置
+    isLoading: false, // 是否正在加载配置
+    hasLoaded: false, // 是否已加载配置
+    isDirty: false,    // 是否有未保存的变更
+    currentTabName: "basic",  // 当前选中的选项卡名称
   },
 };
 
@@ -55,31 +52,6 @@ function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function normalizeConfigShape(raw = {}) {
-  const base = raw || {};
-  const defaultSetting = { builtin_tools: [], callable_subagents: [] };
-
-  const subagentDefaultSetting = {
-    ...defaultSetting,
-    ...(base.subagent_default_setting && typeof base.subagent_default_setting === "object"
-      ? base.subagent_default_setting
-      : {}),
-  };
-
-  const subagentSettings = {};
-  const rawSettings = base.subagent_settings && typeof base.subagent_settings === "object"
-    ? base.subagent_settings
-    : {};
-  for (const [name, value] of Object.entries(rawSettings)) {
-    subagentSettings[name] = {
-      ...defaultSetting,
-      ...(value && typeof value === "object" ? value : {}),
-    };
-  }
-
-  return { ...base, subagent_default_setting: subagentDefaultSetting, subagent_settings: subagentSettings };
-}
-
 function replaceConfigState(nextConfig) {
   Object.keys(state.data.config).forEach((key) => delete state.data.config[key]);
   Object.assign(state.data.config, cloneValue(nextConfig));
@@ -88,13 +60,13 @@ function replaceConfigState(nextConfig) {
 
 // ── 配置读写（按 . 路径访问嵌套） ──
 
-function get(path, def) {
+function get(path) {
   let v = state.data.config;
   for (const k of path.split(".")) {
-    if (v == null || typeof v !== "object") return def;
+    if (v == null || typeof v !== "object") return undefined;
     v = v[k];
   }
-  return v !== undefined ? v : def;
+  return v;
 }
 
 function set(path, val) {
@@ -104,44 +76,14 @@ function set(path, val) {
   state.ui.isDirty = true;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ── 数据源（SubAgent 选项构造） ────────────────────────────────
-// ═══════════════════════════════════════════════════════════════
-
-function buildSubAgentModalEntries(name) {
-  const base = `subagent_settings.${name}`;
-  const callableOptions = getCallableSubagentOptions(name);
-
-  return [
-    { label: "可调 SubAgent", content: () => ui.checkboxList({
-      items: callableOptions,
-      values: get(`${base}.callable_subagents`, []),
-      selectAllLabel: "全选",
-      itemAttrs: { "data-list": `${base}.callable_subagents` },
-      selectAllAttrs: { "data-selectall": `${base}.callable_subagents` },
-    }) },
-    { label: "内置工具", content: () => ui.checkboxListGrouped({
-      groups: state.data.builtinToolsInfo.groups || {},
-      values: get(`${base}.builtin_tools`, []),
-      itemAttrs: { "data-list": `${base}.builtin_tools` },
-      groupAttrs: (gname) => ({ "data-selectall-group": `${base}.builtin_tools`, "data-group": gname }),
-    }) },
-  ];
-}
+// ── 路由 / SubAgent 辅助查询 ──
 
 function getRouterName() {
-  return get("router_mode_enabled", false) ? get("router_subagent_name", "") : "";
-}
-
-function getCallableSubagentOptions(excludeName) {
-  const routerName = getRouterName();
-  return state.data.subAgentNames
-    .filter((n) => n !== excludeName && n !== routerName)
-    .map((n) => ({ value: n, label: n }));
+  return get("router_mode_enabled") ? get("router_subagent_name") : "";
 }
 
 function getRouterStateInfo() {
-  const enabled = get("router_mode_enabled", false);
+  const enabled = get("router_mode_enabled");
   const routerName = getRouterName();
   return {
     enabled,
@@ -151,15 +93,7 @@ function getRouterStateInfo() {
 }
 
 function getSubAgentSetting(name) {
-  const raw = get(`subagent_settings.${name}`, null);
-  const fallback = { builtin_tools: [], callable_subagents: [] };
-  if (!raw || typeof raw !== "object") {
-    return { ...get("subagent_default_setting", fallback), ...fallback };
-  }
-  return {
-    builtin_tools: Array.isArray(raw.builtin_tools) ? raw.builtin_tools : [],
-    callable_subagents: Array.isArray(raw.callable_subagents) ? raw.callable_subagents : [],
-  };
+  return get(`subagent_settings.${name}`) || get("subagent_default_setting");
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -177,7 +111,7 @@ function renderConfigOverview() {
     { label: "已注册 SubAgent", value: state.data.subAgentNames.length || 0 },
     { label: "已配置 SubAgent", value: configuredAgents },
     { label: "路由模式", value: routerState.label },
-    { label: "最大嵌套深度", value: get("max_call_subagent_depth", 0) },
+    { label: "最大嵌套深度", value: get("max_call_subagent_depth") },
   ];
 
   return `
@@ -212,30 +146,49 @@ function renderSubAgentIntro() {
 // ── 渲染器 · SubAgent 卡片 ───────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
-function buildPillSummary(items) {
-  return items
-    .filter((it) => it.count > 0)
-    .map((it) => ui.pill({ text: `${it.label} ${it.count}` }))
-    .join("");
-}
-
 function renderSubAgentCard(name) {
   const isRouter = name === getRouterName();
-  const { builtin_tools: builtinToolsValue, callable_subagents: callableSubagentsValue } = getSubAgentSetting(name);
+  const { builtin_tools: builtinTools, callable_subagents: callableSubagents } = getSubAgentSetting(name);
 
-  const summary = buildPillSummary([
-    { count: builtinToolsValue.length, label: "内置工具" },
-    { count: callableSubagentsValue.length, label: "可调 SubAgent" },
-  ]);
+  const summary = [
+    { count: builtinTools.length, label: "内置工具" },
+    { count: callableSubagents.length, label: "可调 SubAgent" },
+  ].filter((it) => it.count > 0).map((it) => ui.pill({ text: `${it.label} ${it.count}` })).join("");
 
   const header = `<div class="card-title-row">
     <div class="card-title-main">${escapeHtml(name)}${isRouter ? ui.tag({ text: "路由层", variant: "purple" }) : ""}</div>
     <div class="subagent-summary">${summary || ui.pill({ text: "尚未配置", variant: "muted" })}</div>
   </div>`;
 
-  const content = buildSubAgentModalEntries(name)
-    .map((entry) => modal.modalCard({ title: entry.label, contentFn: entry.content, triggerLabel: "配置" }))
-    .join("");
+  const base = `subagent_settings.${name}`;
+  const routerName = getRouterName();
+  const callableOptions = state.data.subAgentNames
+    .filter((n) => n !== name && n !== routerName)
+    .map((n) => ({ value: n, label: n }));
+
+  const content = [
+    modal.modalCard({
+      title: "可调 SubAgent",
+      triggerLabel: "配置",
+      contentFn: () => ui.checkboxList({
+        items: callableOptions,
+        values: get(`${base}.callable_subagents`) ?? [],
+        selectAllLabel: "全选",
+        itemAttrs: { "data-list": `${base}.callable_subagents` },
+        selectAllAttrs: { "data-selectall": `${base}.callable_subagents` },
+      }),
+    }),
+    modal.modalCard({
+      title: "内置工具",
+      triggerLabel: "配置",
+      contentFn: () => ui.checkboxListGrouped({
+        groups: state.data.builtinToolsInfo.groups || {},
+        values: get(`${base}.builtin_tools`) ?? [],
+        itemAttrs: { "data-list": `${base}.builtin_tools` },
+        groupAttrs: (gname) => ({ "data-selectall-group": `${base}.builtin_tools`, "data-group": gname }),
+      }),
+    }),
+  ].join("");
 
   return ui.panel({ children: header + content, className: isRouter ? "card-highlight-purple" : "" });
 }
@@ -244,39 +197,39 @@ function renderSubAgentCard(name) {
 // ── 渲染器 · Tab 主入口 ──────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
-function renderBasicConfigContent() {
-  const maxDepth = ui.numberInput({
-    label: "最大嵌套调用深度",
-    value: get("max_call_subagent_depth", 0),
-    hint: "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。",
-    attrs: { "data-p": "max_call_subagent_depth" },
-  });
-
-  const routerEnabled = ui.checkboxInput({
-    label: "开启路由 SubAgent 模式",
-    checked: get("router_mode_enabled", false),
-    hint: "开启后，用户输入将先由路由 SubAgent 处理，由其决定直接返回 MainAgent 或交由下游 SubAgent 处理。",
-    attrs: { "data-p": "router_mode_enabled" },
-  });
-
-  let routerCard = "";
-  if (get("router_mode_enabled", false)) {
-    const routerSelect = ui.selectInput({
-      label: "路由 SubAgent 名称",
-      value: get("router_subagent_name", ""),
-      options: state.data.subAgentNames,
-      hint: "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。",
-      attrs: { "data-p": "router_subagent_name" },
-    });
-    routerCard = ui.card({ title: "路由 SubAgent 配置", content: routerSelect, className: "router-config-card" });
-  }
-
-  return maxDepth + routerEnabled + routerCard;
-}
-
 function renderBasicTab() {
   const routerState = getRouterStateInfo();
   const routerLabel = routerState.enabled ? (routerState.routerName || "已开启") : "关闭";
+
+  const basicConfig = [
+    ui.numberInput({
+      label: "最大嵌套调用深度",
+      value: get("max_call_subagent_depth"),
+      hint: "SubAgent 嵌套调用的最大层数，0 表示无限嵌套。",
+      attrs: { "data-p": "max_call_subagent_depth" },
+    }),
+    ui.checkboxInput({
+      label: "开启路由 SubAgent 模式",
+      checked: get("router_mode_enabled"),
+      hint: "开启后，用户输入将先由路由 SubAgent 处理，由其决定直接返回 MainAgent 或交由下游 SubAgent 处理。",
+      attrs: { "data-p": "router_mode_enabled" },
+    }),
+  ];
+
+  if (get("router_mode_enabled")) {
+    basicConfig.push(ui.card({
+      title: "路由 SubAgent 配置",
+      className: "router-config-card",
+      content: ui.selectInput({
+        label: "路由 SubAgent 名称",
+        value: get("router_subagent_name"),
+        options: state.data.subAgentNames,
+        hint: "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。",
+        attrs: { "data-p": "router_subagent_name" },
+      }),
+    }));
+  }
+
   return [
     `<div class="hero-metrics">
       <div class="hero-metric">
@@ -293,11 +246,7 @@ function renderBasicTab() {
       </div>
     </div>`,
     renderConfigOverview(),
-    ui.sectionCard({
-      title: "基础配置",
-      description: "控制主流程、路由行为以及基础调用层级。",
-      content: renderBasicConfigContent(),
-    }),
+    ui.sectionCard({ title: "基础配置", description: "控制主流程、路由行为以及基础调用层级。", content: basicConfig.join("") }),
   ].join("");
 }
 
@@ -400,10 +349,6 @@ function renderBody(tabName) {
   applyIndeterminate(els.body);
 }
 
-function rerenderCurrentTab() {
-  renderBody(state.ui.currentTabName);
-}
-
 function switchTab(name) {
   const tabName = tabRenderers[name] ? name : "basic";
   state.ui.currentTabName = tabName;
@@ -454,12 +399,15 @@ function resetConfigToSaved() {
 // ── 事件处理器（由事件委托统一分发） ─────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
-/**
- * 从事件目标提取 data-p / data-list / data-selectall / data-selectall-group
- * 并写入 state，统一由事件委托处理，不需要逐个元素 addEventListener。
- */
-function writeStateFromTarget(target, root) {
+function handleInput(e) {
+  const root = e.currentTarget;
+  const target = e.target;
   const ds = target.dataset;
+
+  // 数字输入过滤
+  if (ds.p === "max_call_subagent_depth") {
+    target.value = target.value.replace(/^0+(?=\d)|-/g, "");
+  }
 
   // 单值绑定：data-p
   if (ds.p) {
@@ -470,44 +418,29 @@ function writeStateFromTarget(target, root) {
       v = isNaN(n) ? v : n;
     }
     set(ds.p, v);
-    return { type: "single", key: ds.p };
+    refreshStatus();
+
+    // 路由相关字段变化时重渲染当前 tab
+    if (ds.p === "router_mode_enabled" || ds.p === "router_subagent_name") {
+      renderBody(state.ui.currentTabName);
+    }
+    return;
   }
 
   // 列表绑定：data-list / data-selectall / data-selectall-group
   const listPath = ds.list || ds.selectall || ds.selectallGroup;
-  if (!listPath) return null;
+  if (!listPath) return;
 
   if (ds.selectall) {
     root.querySelectorAll(`input[data-list="${listPath}"]`).forEach((el) => (el.checked = target.checked));
   } else if (ds.selectallGroup) {
-    target
-      .closest(".chklist-group")
-      .querySelectorAll(`input[data-list="${listPath}"]`)
-      .forEach((el) => (el.checked = target.checked));
+    target.closest(".chklist-group").querySelectorAll(`input[data-list="${listPath}"]`).forEach((el) => (el.checked = target.checked));
   }
 
   const values = [...root.querySelectorAll(`input[data-list="${listPath}"]:checked`)].map((el) => el.value);
   set(listPath, values);
   syncSelectAll(listPath, root);
-  return { type: "list", path: listPath };
-}
-
-function handleInput(e) {
-  const root = e.currentTarget;
-  const target = e.target;
-  const ds = target.dataset;
-
-  if (ds.p === "max_call_subagent_depth") {
-    target.value = target.value.replace(/^0+(?=\d)|-/g, "");
-  }
-
-  const needsRerender = ds.p === "router_mode_enabled" || ds.p === "router_subagent_name";
-
-  const written = writeStateFromTarget(target, root);
-  if (!written) return;
-
   refreshStatus();
-  if (needsRerender) rerenderCurrentTab();
 }
 
 function handleKeydown(e) {
@@ -574,14 +507,6 @@ function bindScopeEventHandlers(root) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ── 事件绑定（唯一入口） ─────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════
-
-function registerEvents() {
-  bindScopeEventHandlers(els.app);
-}
-
-// ═══════════════════════════════════════════════════════════════
 // ── 初始化 ───────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
@@ -590,15 +515,14 @@ function registerEvents() {
   setSaveButtonState();
   setStatus("正在加载...", "loading");
 
-  registerEvents();
+  bindScopeEventHandlers(els.app);
 
   await bridge.ready();
   try {
     state.data.builtinToolsInfo = (await api.get("builtin_tools")) || { groups: {} };
     state.data.subAgentNames = (await api.get("subagent_names")) || [];
     const rawConfig = await api.getConfig();
-    const normalizedConfig = normalizeConfigShape(rawConfig);
-    replaceConfigState(normalizedConfig);
+    replaceConfigState(rawConfig);
     Object.assign(state.data.savedConfig, cloneValue(state.data.config));
     state.ui.hasLoaded = true;
     setStatus("已加载", "ok");
