@@ -266,6 +266,7 @@ function setStatus(text, cls) {
   els.status.className = `badge ${cls}`;
 }
 
+// 更新保存按钮状态
 function setSaveButtonState() {
   const disabled = state.ui.isSaving || state.ui.isLoading || !state.ui.hasLoaded || !state.ui.isDirty;
   els.btnSave.disabled = disabled;
