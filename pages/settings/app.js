@@ -266,12 +266,12 @@ function setStatus(text, cls) {
   els.status.className = `badge ${cls}`;
 }
 
-// 更新保存按钮状态
+// 更新保存/撤销按钮状态
 function setSaveButtonState() {
-  const disabled = state.ui.isSaving || state.ui.isLoading || !state.ui.hasLoaded || !state.ui.isDirty;
-  els.btnSave.disabled = disabled;
+  const ready = state.ui.hasLoaded && !state.ui.isLoading;
+  els.btnSave.disabled = !ready || !state.ui.isDirty || state.ui.isSaving;
   els.btnSave.textContent = state.ui.isSaving ? "保存中..." : "保存配置项";
-  els.btnReset.disabled = disabled;
+  els.btnReset.disabled = !ready || !state.ui.isDirty;
 }
 
 function refreshStatus() {
