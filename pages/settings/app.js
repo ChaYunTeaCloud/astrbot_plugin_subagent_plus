@@ -100,36 +100,26 @@ function renderConfigOverview() {
     return setting.builtin_tools.length || setting.callable_subagents.length;
   }).length;
 
-  const overviewItems = [
+  return ui.stat([
     { label: "已注册 SubAgent", value: state.data.subAgentNames.length || 0 },
     { label: "已配置 SubAgent", value: configuredAgents },
     { label: "路由模式", value: routerName === null ? "关闭" : (routerName || "已开启") },
     { label: "最大嵌套深度", value: get("max_call_subagent_depth") },
-  ];
-
-  return `
-    <div class="overview-grid">
-      ${overviewItems.map((item) => `
-        <div class="overview-card">
-          <div class="overview-label">${escapeHtml(item.label)}</div>
-          <div class="overview-value">${escapeHtml(item.value)}</div>
-        </div>
-      `).join("")}
-    </div>
-  `;
+  ]);
 }
 
 // 渲染 SubAgent 配置介绍
 function renderSubAgentIntro() {
   const routerName = getRouterName();
   const routerHint = routerName === null ? "路由模式当前关闭" : (routerName ? `当前路由层：${routerName}` : "已开启路由模式，但尚未选择路由 SubAgent");
+  const countText = state.data.subAgentNames.length ? `${state.data.subAgentNames.length} 个已注册` : "暂无已注册";
   return ui.sectionCard({
     title: "SubAgent 配置",
     description: "为每个已注册的 SubAgent 设定可调用的下游代理与可用内置工具。",
     content: `<div class="subagent-intro">
       <div class="subagent-intro-row">
-        <span class="subagent-intro-pill">${escapeHtml(routerHint)}</span>
-        <span class="subagent-intro-pill subagent-intro-pill-muted">${state.data.subAgentNames.length ? `${state.data.subAgentNames.length} 个已注册` : "暂无已注册"}</span>
+        ${ui.pill({ text: routerHint })}
+        ${ui.pill({ text: countText, variant: "muted" })}
       </div>
       <div class="subagent-tip">点击卡片里的按钮，可以直接展开"可调用 SubAgent"和"内置工具"列表，快速完成精细化配置。</div>
     </div>`,

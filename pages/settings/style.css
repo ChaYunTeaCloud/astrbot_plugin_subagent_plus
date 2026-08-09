@@ -230,44 +230,6 @@
   border-color: #e4e8ee;
 }
 
-/* ─── 概览卡片 ──────────────────────────── */
-.overview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.overview-card {
-  background: #fbfcfe;
-  border: 1px solid #eceef2;
-  border-left: 2px solid #dce7f8;
-  border-radius: 10px;
-  padding: 10px 12px;
-  box-shadow: none;
-}
-
-.overview-card .overview-value {
-  font-variant-numeric: tabular-nums;
-}
-
-.overview-card:hover {
-  border-color: #dfe3ea;
-  transform: translateY(-1px);
-}
-
-.overview-label {
-  font-size: 12px;
-  color: #86909c;
-  margin-bottom: 4px;
-}
-
-.overview-value {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d2129;
-}
-
 /* ─── SubAgent 业务卡片高亮（路由层） ──────────────────────────── */
 .card.card-highlight-purple {
   border-color: #d8b4fe;
@@ -317,52 +279,7 @@
   line-height: 1.6;
 }
 
-.subagent-intro-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #eef4ff;
-  color: #165dff;
-  font-size: 12px;
-  font-weight: 600;
-  border: 1px solid #cfe0ff;
-}
 
-.subagent-intro-pill-muted {
-  background: #f2f3f5;
-  color: #4e5969;
-  border-color: #e5e6eb;
-}
-
-/* ─── 配置建议列表 ──────────────────────────── */
-.guide-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
-}
-
-.guide-item {
-  border: 1px solid #e8edf5;
-  border-left: 2px solid #cfe0ff;
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: linear-gradient(180deg, #fbfdff 0%, #ffffff 100%);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-}
-
-.guide-item-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1d2129;
-  margin-bottom: 4px;
-}
-
-.guide-item-desc {
-  font-size: 12px;
-  color: #7a8596;
-  line-height: 1.55;
-}
 
 /* ─── 主体滚动条（覆盖组件库通用样式，限定 .body 作用域） ──────────────────────────── */
 .body::-webkit-scrollbar {

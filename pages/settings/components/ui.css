@@ -299,6 +299,35 @@ body {
   margin-bottom: 0;
 }
 
+/* ─── stat（指标卡网格） ─────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stat {
+  background: #fbfcfe;
+  border: 1px solid #eceef2;
+  border-left: 2px solid #dce7f8;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #86909c;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d2129;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ─── emptyState（空状态） ─────────────────────────── */
 .empty-state {
   padding: 24px 20px;

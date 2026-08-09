@@ -64,6 +64,17 @@ const ui = {
   },
 
   /**
+   * 指标卡网格（自适应排列的 label + value 卡片组）
+   * @param {{label: string, value: string}[]} items
+   * @returns {string} HTML
+   */
+  stat(items = []) {
+    return `<div class="stat-grid">${items.map((item) =>
+      `<div class="stat"><div class="stat-label">${escapeHtml(item.label)}</div><div class="stat-value">${escapeHtml(item.value)}</div></div>`
+    ).join("")}</div>`;
+  },
+
+  /**
    * 空状态提示
    * @param {Object} options
    * @param {string} options.title - 标题
