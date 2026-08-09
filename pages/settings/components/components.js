@@ -234,7 +234,9 @@ const ui = {
    * @param {string} [options.hint] - 提示
    * @param {string} [options.selectAllLabel] - 全选标签，空则不显示全选框
    * @param {string} [options.name] - 列表绑定标识；传入时自动生成 data-name，
-   *        使列表项与全选按钮归入同一组并通过 ui.chklist 联动（同一列表内必须一致）
+   *        使列表项与全选按钮归入同一组并通过 ui.chklist 联动（同一列表内必须一致）。
+   *        注意：同名实例的值收集会合并（同一字段可分多个列表展示）；全选联动
+   *        仍按各自容器隔离。如需互不影响，请使用不同的 name。
    * @param {Object} [options.itemAttrs] - 透传到每个 item checkbox 的额外属性
    * @param {Object} [options.selectAllAttrs] - 透传到全选 checkbox 的额外属性
    * @param {string} [options.emptyText="暂无可选项"] - 空状态标题
@@ -279,7 +281,9 @@ const ui = {
    * @param {Object} [options.groups] - 分组对象 { groupName: { itemValue: itemDesc, ... } }
    * @param {Array} [options.values=[]] - 选中的 value 数组
    * @param {string} [options.name] - 列表绑定标识；传入时自动生成 data-name，
-   *        使列表项与分组全选按钮归入同一组并通过 ui.chklist 联动（同一列表内必须一致）
+   *        使列表项与分组全选按钮归入同一组并通过 ui.chklist 联动（同一列表内必须一致）。
+   *        注意：同名实例的值收集会合并（同一字段可分多个列表展示）；全选联动
+   *        仍按各自容器隔离。如需互不影响，请使用不同的 name。
    * @param {Object} [options.itemAttrs] - 透传到每个 item checkbox 的额外属性
    * @param {Object|Function} [options.groupAttrs] - 透传到分组全选 checkbox 的额外属性；
    *        传函数时签名为 (groupName) => attrs，可按分组生成不同属性
@@ -333,7 +337,9 @@ const ui = {
      * @param {Object} options
      * @param {Element} options.root - 事件委托根元素（app 或 modal overlay）
      * @param {Element} options.target - 触发事件的 checkbox
-     * @returns {{name: string, values: string[]}|null} 绑定的列表名与选中值；非列表控件返回 null
+     * @returns {{name: string, values: string[]}|null} 绑定的列表名与选中值；
+     *        其中 values 为 root 内全部同名控件的选中值（同名实例合并）；
+     *        非列表控件返回 null
      */
     handleChange({ root, target }) {
       const name = target.dataset.name;
