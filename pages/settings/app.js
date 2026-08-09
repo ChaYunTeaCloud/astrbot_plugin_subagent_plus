@@ -30,10 +30,10 @@ const api = {
 
 const state = {
   data: {
-    config: {},
-    savedConfig: {},
-    builtinToolsInfo: { groups: {} },
-    subAgentNames: [],
+    config: {},           // 当前配置
+    savedConfig: {},      // 已保存配置
+    builtinToolsInfo: { groups: {} }, // 内置工具信息
+    subAgentNames: [],  // 所有 SubAgent 名称
   },
   ui: {
     isSaving: false,  // 是否正在保存配置
@@ -48,10 +48,12 @@ const state = {
 // ── 工具函数（数据层） ────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
+// 深拷贝值，避免修改原始对象
 function cloneValue(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+// 替换配置状态，更新当前配置并标记为未变更
 function replaceConfigState(nextConfig) {
   Object.keys(state.data.config).forEach((key) => delete state.data.config[key]);
   Object.assign(state.data.config, cloneValue(nextConfig));
@@ -79,17 +81,7 @@ function set(path, val) {
 // ── 路由 / SubAgent 辅助查询 ──
 
 function getRouterName() {
-  return get("router_mode_enabled") ? get("router_subagent_name") : "";
-}
-
-function getRouterStateInfo() {
-  const enabled = get("router_mode_enabled");
-  const routerName = getRouterName();
-  return {
-    enabled,
-    routerName,
-    label: enabled ? (routerName || "已开启") : "关闭",
-  };
+  return get("router_mode_enabled") ? get("router_subagent_name") : null;
 }
 
 function getSubAgentSetting(name) {
@@ -100,8 +92,9 @@ function getSubAgentSetting(name) {
 // ── 渲染器 · 子组件（Overview / Guide 等） ───────────────────
 // ═══════════════════════════════════════════════════════════════
 
+// 渲染配置概览
 function renderConfigOverview() {
-  const routerState = getRouterStateInfo();
+  const routerName = getRouterName();
   const configuredAgents = state.data.subAgentNames.filter((name) => {
     const setting = getSubAgentSetting(name);
     return setting.builtin_tools.length || setting.callable_subagents.length;
@@ -110,7 +103,7 @@ function renderConfigOverview() {
   const overviewItems = [
     { label: "已注册 SubAgent", value: state.data.subAgentNames.length || 0 },
     { label: "已配置 SubAgent", value: configuredAgents },
-    { label: "路由模式", value: routerState.label },
+    { label: "路由模式", value: routerName === null ? "关闭" : (routerName || "已开启") },
     { label: "最大嵌套深度", value: get("max_call_subagent_depth") },
   ];
 
@@ -126,9 +119,10 @@ function renderConfigOverview() {
   `;
 }
 
+// 渲染 SubAgent 配置介绍
 function renderSubAgentIntro() {
-  const routerState = getRouterStateInfo();
-  const routerHint = routerState.enabled ? (routerState.routerName ? `当前路由层：${routerState.routerName}` : "已开启路由模式，但尚未选择路由 SubAgent") : "路由模式当前关闭";
+  const routerName = getRouterName();
+  const routerHint = routerName === null ? "路由模式当前关闭" : (routerName ? `当前路由层：${routerName}` : "已开启路由模式，但尚未选择路由 SubAgent");
   return ui.sectionCard({
     title: "SubAgent 配置",
     description: "为每个已注册的 SubAgent 设定可调用的下游代理与可用内置工具。",
@@ -146,8 +140,10 @@ function renderSubAgentIntro() {
 // ── 渲染器 · SubAgent 卡片 ───────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
+// 渲染 SubAgent 卡片
 function renderSubAgentCard(name) {
-  const isRouter = name === getRouterName();
+  const routerName = getRouterName() ?? "";
+  const isRouter = name === routerName;
   const { builtin_tools: builtinTools, callable_subagents: callableSubagents } = getSubAgentSetting(name);
 
   const summary = [
@@ -161,7 +157,6 @@ function renderSubAgentCard(name) {
   </div>`;
 
   const base = `subagent_settings.${name}`;
-  const routerName = getRouterName();
   const callableOptions = state.data.subAgentNames
     .filter((n) => n !== name && n !== routerName)
     .map((n) => ({ value: n, label: n }));
@@ -197,9 +192,10 @@ function renderSubAgentCard(name) {
 // ── 渲染器 · Tab 主入口 ──────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 
+// 渲染基础配置 Tab
 function renderBasicTab() {
-  const routerState = getRouterStateInfo();
-  const routerLabel = routerState.enabled ? (routerState.routerName || "已开启") : "关闭";
+  const routerEnabled = get("router_mode_enabled");
+  const routerName = getRouterName();
 
   const basicConfig = [
     ui.numberInput({
@@ -210,19 +206,19 @@ function renderBasicTab() {
     }),
     ui.checkboxInput({
       label: "开启路由 SubAgent 模式",
-      checked: get("router_mode_enabled"),
+      checked: routerEnabled,
       hint: "开启后，用户输入将先由路由 SubAgent 处理，由其决定直接返回 MainAgent 或交由下游 SubAgent 处理。",
       attrs: { "data-p": "router_mode_enabled" },
     }),
   ];
 
-  if (get("router_mode_enabled")) {
+  if (routerEnabled) {
     basicConfig.push(ui.card({
       title: "路由 SubAgent 配置",
       className: "router-config-card",
       content: ui.selectInput({
         label: "路由 SubAgent 名称",
-        value: get("router_subagent_name"),
+        value: routerName ?? "",
         options: state.data.subAgentNames,
         hint: "选择的 SubAgent 将作为路由层接管用户输入，由其判断直接返回给 MainAgent 处理还是交由下游 SubAgent 处理。",
         attrs: { "data-p": "router_subagent_name" },
@@ -231,20 +227,6 @@ function renderBasicTab() {
   }
 
   return [
-    `<div class="hero-metrics">
-      <div class="hero-metric">
-        <span class="hero-metric-label">当前路由</span>
-        <strong>${escapeHtml(routerLabel)}</strong>
-      </div>
-      <div class="hero-metric">
-        <span class="hero-metric-label">最大嵌套深度</span>
-        <strong>${escapeHtml(get("max_call_subagent_depth"))}</strong>
-      </div>
-      <div class="hero-metric">
-        <span class="hero-metric-label">已注册</span>
-        <strong>${escapeHtml(state.data.subAgentNames.length || 0)} 个</strong>
-      </div>
-    </div>`,
     renderConfigOverview(),
     ui.sectionCard({ title: "基础配置", description: "控制主流程、路由行为以及基础调用层级。", content: basicConfig.join("") }),
   ].join("");
