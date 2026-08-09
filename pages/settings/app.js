@@ -375,9 +375,9 @@ function handleInput(e) {
   const target = e.target;
   const ds = target.dataset;
 
-  // 数字输入过滤（只保留数字，兜底处理粘贴场景）
+  // 数字输入过滤：只保留数字，再清除开头多余的 0（兜底处理粘贴场景）
   if (ds.p === "max_call_subagent_depth") {
-    target.value = target.value.replace(/\D/g, "");
+    target.value = target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
   }
 
   // 单值绑定：data-p
