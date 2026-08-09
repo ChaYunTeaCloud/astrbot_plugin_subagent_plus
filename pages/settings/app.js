@@ -1,7 +1,6 @@
 // SubAgent Plus · 配置中心前端逻辑
 
 import ui, { modal, toast, tip } from "./components/components.js";
-import { escapeHtml } from "./components/utils.js";
 
 // ═══════════════════════════════════════════════════════════════
 // ── 模块入口 · 常量 ───────────────────────────────────────────
@@ -101,7 +100,7 @@ function renderConfigOverview() {
   }).length;
 
   return ui.stat([
-    { label: "已注册 SubAgent", value: state.data.subAgentNames.length || 0 },
+    { label: "已注册 SubAgent", value: state.data.subAgentNames.length },
     { label: "已配置 SubAgent", value: configuredAgents },
     { label: "路由模式", value: routerName === null ? "关闭" : (routerName || "已开启") },
     { label: "最大嵌套深度", value: get("max_call_subagent_depth") },
@@ -142,7 +141,7 @@ function renderSubAgentCard(name) {
   ].filter((it) => it.count > 0).map((it) => ui.pill({ text: `${it.label} ${it.count}` })).join("");
 
   const header = `<div class="card-title-row">
-    <div class="card-title-main">${escapeHtml(name)}${isRouter ? ui.tag({ text: "路由层", variant: "purple" }) : ""}</div>
+    <div class="card-title-main">${name}${isRouter ? ui.tag({ text: "路由层", variant: "purple" }) : ""}</div>
     <div class="subagent-summary">${summary || ui.pill({ text: "尚未配置", variant: "muted" })}</div>
   </div>`;
 
@@ -316,8 +315,7 @@ function updateTabsUI(tabName) {
 }
 
 function renderBody(tabName) {
-  const renderer = tabRenderers[tabName] ?? tabRenderers.basic;
-  els.body.innerHTML = renderer();
+  els.body.innerHTML = tabRenderers[tabName]();
   applyIndeterminate(els.body);
 }
 
@@ -364,7 +362,7 @@ function resetConfigToSaved() {
   if (state.ui.isSaving || state.ui.isLoading || !state.ui.hasLoaded) return;
   replaceConfigState(state.data.savedConfig);
   refreshStatus();
-  switchTab(state.ui.currentTabName || "basic");
+  switchTab(state.ui.currentTabName);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -491,8 +489,8 @@ function bindScopeEventHandlers(root) {
 
   await bridge.ready();
   try {
-    state.data.builtinToolsInfo = (await api.get("builtin_tools")) || { groups: {} };
-    state.data.subAgentNames = (await api.get("subagent_names")) || [];
+    state.data.builtinToolsInfo = await api.get("builtin_tools");
+    state.data.subAgentNames = await api.get("subagent_names");
     const rawConfig = await api.getConfig();
     replaceConfigState(rawConfig);
     Object.assign(state.data.savedConfig, cloneValue(state.data.config));
