@@ -51,6 +51,15 @@ function _renderCheckboxItems(items, cur, itemAttrs) {
   `).join("");
 }
 
+// 为列表控件注入 data-name 绑定（值收集按同名合并，全选联动按容器隔离）
+function _bindName(name, attrs) {
+  return name ? { "data-name": name, ...attrs } : attrs;
+}
+
+// 列表空状态默认文案（checkboxList / checkboxListGrouped 共用）
+const _LIST_EMPTY_TEXT = "暂无可选项";
+const _LIST_EMPTY_DESC = "当前没有可供选择的候选内容。";
+
 const ui = {
   // ── 容器组件 ──────────────────────────────────────────────────
 
@@ -111,13 +120,11 @@ const ui = {
    * @param {Object} options
    * @param {string} [options.title] - 纯文本标题（自动转义）
    * @param {string} [options.content] - HTML 内容
-   * @param {boolean} [options.show=true] - false 时添加 hidden 类
    * @param {string} [options.className] - 额外类名
    * @returns {string} HTML
    */
-  card({ title = "", content = "", show = true, className = "" }) {
+  card({ title = "", content = "", className = "" }) {
     const classes = ["tea-card"];
-    if (show === false) classes.push("tea-hidden");
     if (className) classes.push(className);
     return `<div class="${classes.join(" ")}">
       <h3>${escapeHtml(title)}</h3>
@@ -243,7 +250,7 @@ const ui = {
    * @param {string} [options.emptyDescription] - 空状态描述
    * @returns {string} HTML
    */
-  checkboxList({ items = [], values = [], hint = "", selectAllLabel = "", name = "", itemAttrs = {}, selectAllAttrs = {}, emptyText = "暂无可选项", emptyDescription = "当前没有可供选择的候选内容。" }) {
+  checkboxList({ items = [], values = [], hint = "", selectAllLabel = "", name = "", itemAttrs = {}, selectAllAttrs = {}, emptyText = _LIST_EMPTY_TEXT, emptyDescription = _LIST_EMPTY_DESC }) {
     const cur = new Set(values);
     const normalized = (items || []).map((it) => ({ value: it.value, label: it.label ?? it.value, desc: it.desc }));
     if (!normalized.length) {
@@ -253,8 +260,8 @@ const ui = {
       </div>`;
     }
     // name 存在时自动生成列表绑定契约（data-name），无需调用方手动传入
-    const listItemAttrs = name ? { "data-name": name, ...itemAttrs } : itemAttrs;
-    const listSelectAllAttrs = name ? { "data-name": name, ...selectAllAttrs } : selectAllAttrs;
+    const listItemAttrs = _bindName(name, itemAttrs);
+    const listSelectAllAttrs = _bindName(name, selectAllAttrs);
     const allChecked = normalized.every((it) => cur.has(it.value));
     const itemsHtml = _renderCheckboxItems(normalized, cur, listItemAttrs);
     const selectAllHtml = selectAllLabel ? `
@@ -280,6 +287,7 @@ const ui = {
    * @param {Object} options
    * @param {Object} [options.groups] - 分组对象 { groupName: { itemValue: itemDesc, ... } }
    * @param {Array} [options.values=[]] - 选中的 value 数组
+   * @param {string} [options.hint] - 提示
    * @param {string} [options.name] - 列表绑定标识；传入时自动生成 data-name，
    *        使列表项与分组全选按钮归入同一组并通过 ui.chklist 联动（同一列表内必须一致）。
    *        注意：同名实例的值收集会合并（同一字段可分多个列表展示）；全选联动
@@ -291,20 +299,20 @@ const ui = {
    * @param {string} [options.emptyDescription] - 空状态描述
    * @returns {string} HTML
    */
-  checkboxListGrouped({ groups = {}, values = [], name = "", itemAttrs = {}, groupAttrs = {}, emptyText = "暂无可选项", emptyDescription = "当前没有可供选择的候选内容。" }) {
+  checkboxListGrouped({ groups = {}, values = [], hint = "", name = "", itemAttrs = {}, groupAttrs = {}, emptyText = _LIST_EMPTY_TEXT, emptyDescription = _LIST_EMPTY_DESC }) {
     const cur = new Set(values);
     const resolveGroupAttrs = typeof groupAttrs === "function" ? groupAttrs : () => groupAttrs;
     const groupedEntries = Object.entries(groups || {});
     if (!groupedEntries.length) {
-      return ui.emptyState({ title: emptyText, description: emptyDescription, compact: true });
+      return `<div class="tea-field">
+        ${ui.emptyState({ title: emptyText, description: emptyDescription, compact: true })}
+        ${hint ? `<p class="tea-hint">${escapeHtml(hint)}</p>` : ""}
+      </div>`;
     }
     // name 存在时自动生成列表绑定契约（data-name），无需调用方手动传入
-    const listItemAttrs = name ? { "data-name": name, ...itemAttrs } : itemAttrs;
-    const resolveListGroupAttrs = (gname) => {
-      const attrs = resolveGroupAttrs(gname);
-      return name ? { "data-name": name, ...attrs } : attrs;
-    };
-    return groupedEntries.map(([gname, entries]) => {
+    const listItemAttrs = _bindName(name, itemAttrs);
+    const resolveListGroupAttrs = (gname) => _bindName(name, resolveGroupAttrs(gname));
+    const groupsHtml = groupedEntries.map(([gname, entries]) => {
       const groupEntries = Object.entries(entries || {});
       const items = groupEntries.map(([t, desc]) => ({ value: t, label: t, desc }));
       const allChecked = groupEntries.length > 0 && groupEntries.every(([t]) => cur.has(t));
@@ -322,6 +330,12 @@ const ui = {
         <div class="tea-chklist-group-bd">${itemsHtml}</div>
       </div>`;
     }).join("");
+    return `<div class="tea-field">
+      <div class="tea-chklist">
+        ${groupsHtml}
+      </div>
+      ${hint ? `<p class="tea-hint">${escapeHtml(hint)}</p>` : ""}
+    </div>`;
   },
 
   // ── 表单组件 · 复选框列表运行时辅助 ───────────────────────────

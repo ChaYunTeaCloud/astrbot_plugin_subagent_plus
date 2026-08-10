@@ -203,7 +203,6 @@ function renderBasicTab() {
   if (routerEnabled) {
     basicConfig.push(ui.card({
       title: "路由 SubAgent 配置",
-      className: "router-config-card",
       content: ui.selectInput({
         label: "路由 SubAgent 名称",
         value: routerName ?? "",

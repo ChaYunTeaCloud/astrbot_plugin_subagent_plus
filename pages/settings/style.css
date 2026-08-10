@@ -4,6 +4,45 @@
    通用组件样式见 ./components/ui.css
    ═══════════════════════════════════════════════════════════════ */
 
+/* ─── 页面级 reset（组件库 ui.css 只分发组件样式，页面层自行接管） ─── */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  color: var(--tea-color-text);
+  background: var(--tea-color-bg);
+  scroll-behavior: smooth;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(22, 93, 255, 0.35);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d9dce0;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b8bcc4;
+}
+
 /* ─── 应用根容器 ──────────────────────────── */
 #app {
   min-height: 100vh;
@@ -61,8 +100,8 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--color-primary) 0%, #6aa5ff 100%);
-  color: var(--color-surface);
+  background: linear-gradient(135deg, var(--tea-color-primary) 0%, #6aa5ff 100%);
+  color: var(--tea-color-surface);
   font-size: 15px;
   font-weight: 700;
   box-shadow: 0 8px 18px rgba(22, 93, 255, 0.16);
@@ -164,74 +203,8 @@
   background: radial-gradient(circle at top left, rgba(22, 93, 255, 0.04), transparent 280px);
 }
 
-/* ─── Hero 面板 ──────────────────────────── */
-.hero-panel {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
-  border-radius: 10px;
-  border: 1px solid #e4eaf2;
-  background: #fff;
-  overflow: hidden;
-}
-
-.hero-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: linear-gradient(180deg, #165dff 0%, #7ba8ff 100%);
-}
-
-.hero-copy {
-  flex: 1;
-  min-width: 0;
-}
-
-.hero-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1d2129;
-  margin-bottom: 4px;
-}
-
-.hero-desc {
-  font-size: 12px;
-  color: #7a8596;
-  line-height: 1.6;
-}
-
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: #eef4ff;
-  color: #165dff;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  border: 1px solid #d8e6ff;
-}
-
-.hero-badge-soft {
-  background: #f4f6f9;
-  color: #4e5969;
-  border-color: #e4e8ee;
-}
-
 /* ─── SubAgent 业务卡片高亮（路由层） ──────────────────────────── */
-.card.card-highlight-purple {
+.tea-card.card-highlight-purple {
   border-color: #d8b4fe;
   border-left-color: #b37cff;
   background: linear-gradient(180deg, #faf5ff 0%, #fff 30%);
@@ -281,24 +254,6 @@
 
 
 
-/* ─── 主体滚动条（覆盖组件库通用样式，限定 .body 作用域） ──────────────────────────── */
-.body::-webkit-scrollbar {
-  width: 8px;
-}
-
-.body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.body::-webkit-scrollbar-thumb {
-  background: #d9dce0;
-  border-radius: 4px;
-}
-
-.body::-webkit-scrollbar-thumb:hover {
-  background: #b8bcc4;
-}
-
 /* ─── 响应式 ──────────────────────────── */
 @media screen and (max-width: 640px) {
   .topbar {
@@ -324,7 +279,7 @@
 }
 
 /* ─── 测试 Tab · JSON 展示（折叠卡片内 pre） ──────────────────────────── */
-.collapse-card pre {
+.tea-collapse-card pre {
   margin: 8px 0 0 0;
   padding: 12px;
   background: #f7f8fa;
